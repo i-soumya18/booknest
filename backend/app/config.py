@@ -13,9 +13,10 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(
-        default="postgresql+asyncpg://postgres:postgres@localhost:5432/booknest",
+        default="sqlite+aiosqlite:///./app.db",
         validation_alias="DATABASE_URL",
     )
+
 
     # Authentication & Security
     jwt_secret: str = Field(
@@ -25,8 +26,11 @@ class Settings(BaseSettings):
     jwt_access_ttl_minutes: int = Field(default=15, validation_alias="JWT_ACCESS_TTL_MINUTES")
     jwt_refresh_ttl_days: int = Field(default=30, validation_alias="JWT_REFRESH_TTL_DAYS")
 
-    # Server Settings
-    cors_origins: str = Field(default="http://localhost:3000", validation_alias="CORS_ORIGINS")
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001",
+        validation_alias="CORS_ORIGINS",
+    )
+
     port: int = Field(default=8000, validation_alias="PORT")
     host: str = Field(default="0.0.0.0", validation_alias="HOST")
 

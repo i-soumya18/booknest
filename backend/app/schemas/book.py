@@ -29,7 +29,7 @@ class BookCreateRequest(BaseModel):
     status: BookStatusEnum = Field(default=BookStatusEnum.WANT_TO_READ)
     total_pages: int = Field(..., ge=1)
     current_page: int = Field(default=0, ge=0)
-    rating: int | None = Field(default=None, ge=1, le=5)
+    rating: float | int | None = Field(default=None, ge=1, le=5)
     notes: str | None = Field(default=None)
 
     @field_validator("current_page")
@@ -47,7 +47,7 @@ class BookUpdateRequest(BaseModel):
     status: BookStatusEnum | None = Field(default=None)
     total_pages: int | None = Field(default=None, ge=1)
     current_page: int | None = Field(default=None, ge=0)
-    rating: int | None = Field(default=None, ge=1, le=5)
+    rating: float | int | None = Field(default=None, ge=1, le=5)
     notes: str | None = Field(default=None)
 
 
@@ -61,9 +61,10 @@ class BookResponse(BaseModel):
     status: BookStatusEnum
     total_pages: int
     current_page: int
-    rating: int | None = None
+    rating: float | int | None = None
     notes: str | None = None
     created_at: datetime
+
     updated_at: datetime
     finished_at: datetime | None = None
 

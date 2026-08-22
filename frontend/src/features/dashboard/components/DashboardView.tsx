@@ -4,13 +4,21 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardMetrics, getDashboardMetrics } from "../api";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useAuth } from "@/features/auth";
+
 
 export function DashboardView() {
+  const { user, loading: authLoading, login } = useAuth();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loggingIn, setLoggingIn] = useState(false);
 
   const fetchMetrics = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -21,7 +29,7 @@ export function DashboardView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchMetrics();
@@ -35,6 +43,98 @@ export function DashboardView() {
       [fetchMetrics]
     )
   );
+
+  const handleQuickLogin = async (email: string) => {
+    setLoggingIn(true);
+    try {
+      await login(email, "Password123!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-secondary)" }}>
+        Initializing authentication...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div
+        style={{
+          maxWidth: "650px",
+          margin: "3rem auto",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border-color)",
+          borderRadius: "14px",
+          padding: "2.5rem",
+          textAlign: "center",
+          boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+        }}
+      >
+        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📚</div>
+        <h2 style={{ fontSize: "1.75rem", marginBottom: "0.75rem", color: "var(--text-primary)" }}>
+          Welcome to BookNest
+        </h2>
+        <p style={{ color: "var(--text-secondary)", fontSize: "1rem", lineHeight: 1.6, marginBottom: "2rem" }}>
+          Production-minded reading tracker featuring custom shelf RBAC, real-time WebSockets, atomic page progress tracking, and lending concurrency controls.
+        </p>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <p style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "1rem" }}>
+            QUICK DEMO SIGN-IN
+          </p>
+          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+            <button
+              onClick={() => handleQuickLogin("alice@example.com")}
+              disabled={loggingIn}
+              style={{
+                padding: "0.75rem 1.5rem",
+                background: "var(--accent-color)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+              }}
+            >
+              {loggingIn ? "Logging in..." : "👤 Sign in as Alice (Owner)"}
+            </button>
+            <button
+              onClick={() => handleQuickLogin("bob@example.com")}
+              disabled={loggingIn}
+              style={{
+                padding: "0.75rem 1.5rem",
+                background: "#10b981",
+                color: "#fff",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+              }}
+            >
+              {loggingIn ? "Logging in..." : "👤 Sign in as Bob (Borrower)"}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <p style={{ color: "var(--error-color)", fontSize: "0.85rem", marginTop: "1rem" }}>
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
 
   if (loading && !metrics) {
     return (
@@ -77,6 +177,7 @@ export function DashboardView() {
       </div>
     );
   }
+
 
   const statusMap = metrics?.books_by_status || {};
   const totalBooks = Object.values(statusMap).reduce((a, b) => a + b, 0);
@@ -321,25 +422,30 @@ export function DashboardView() {
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>No recent activity recorded.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {metrics.recent_activity.map((evt) => (
-              <div
-                key={evt.id}
-                style={{
-                  borderBottom: "1px solid var(--border-color)",
-                  paddingBottom: "0.75rem",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "0.9rem",
-                }}
-              >
-                <span style={{ color: "var(--text-primary)" }}>
-                  {evt.eventType.replace(/_/g, " ")} — {evt.payload?.title || evt.payload?.name || evt.payload?.book_title || "item"}
-                </span>
-                <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
-                  {new Date(evt.createdAt).toLocaleTimeString()}
-                </span>
-              </div>
-            ))}
+            {metrics.recent_activity.map((evt) => {
+              const eventType = evt.event_type || evt.eventType || "EVENT";
+              const timestamp = evt.created_at || evt.createdAt || new Date().toISOString();
+              return (
+                <div
+                  key={evt.id}
+                  style={{
+                    borderBottom: "1px solid var(--border-color)",
+                    paddingBottom: "0.75rem",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  <span style={{ color: "var(--text-primary)" }}>
+                    {eventType.replace(/_/g, " ")} — {evt.payload?.title || evt.payload?.name || evt.payload?.book_title || "item"}
+                  </span>
+                  <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
+                    {new Date(timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              );
+            })}
+
           </div>
         )}
       </div>

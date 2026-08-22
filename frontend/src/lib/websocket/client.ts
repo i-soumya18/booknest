@@ -19,8 +19,10 @@ class WebSocketClient {
       return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/api/v1";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8005";
+    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || (apiUrl.replace(/^http/, "ws") + "/api/v1");
     const wsUrl = `${baseUrl}/ws?token=${encodeURIComponent(token)}`;
+
 
     this.isConnecting = true;
 

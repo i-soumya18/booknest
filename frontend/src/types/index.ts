@@ -88,10 +88,16 @@ export interface LendBookRequest {
 
 export interface ActivityEvent {
   id: string;
-  userId: string;
-  eventType: string;
-  entityType: string;
-  entityId: string;
+  user_id?: string;
+  userId?: string;
+  event_type?: string;
+  eventType?: string;
+  entity_type?: string;
+  entityType?: string;
+  entity_id?: string;
+  entityId?: string;
   payload: Record<string, any>;
-  createdAt: string;
+  created_at?: string;
+  createdAt?: string;
 }
+

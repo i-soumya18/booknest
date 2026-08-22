@@ -39,7 +39,8 @@ export function ActivityFeed() {
 
   const renderEventDescription = (event: ActivityEvent) => {
     const p = event.payload || {};
-    switch (event.eventType) {
+    const eventType = event.event_type || event.eventType || "EVENT";
+    switch (eventType) {
       case "BOOK_ADDED":
         return <>📖 Added book <strong>&quot;{p.title || "Untitled"}&quot;</strong> ({p.author || "Unknown"})</>;
       case "BOOK_STATUS_CHANGED":
@@ -65,9 +66,10 @@ export function ActivityFeed() {
       case "BOOK_RETURNED":
         return <>↩️ Book <strong>&quot;{p.book_title}&quot;</strong> returned</>;
       default:
-        return <>{event.eventType.replace(/_/g, " ")}</>;
+        return <>{eventType.replace(/_/g, " ")}</>;
     }
   };
+
 
   return (
     <div>
@@ -150,8 +152,9 @@ export function ActivityFeed() {
                   {renderEventDescription(event)}
                 </div>
                 <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", whiteSpace: "nowrap", marginLeft: "1rem" }}>
-                  {new Date(event.createdAt).toLocaleString()}
+                  {new Date(event.created_at || event.createdAt || Date.now()).toLocaleString()}
                 </div>
+
               </div>
             ))}
           </div>
