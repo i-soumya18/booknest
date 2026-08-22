@@ -95,9 +95,11 @@ booknest/
 **Phase: 0 — Repository + architecture + tooling. ✅ Complete.**
 **Phase: 1 — Database schema + migrations. ✅ Complete.**
 **Phase: 2 — Authentication + JWT + refresh rotation. ✅ Complete.**
-**Phase: 3 — Book domain (CRUD). 🟢 Active.**
+**Phase: 3 — Book domain (CRUD). ✅ Complete.**
+**Phase: 4 — Filtering / search / pagination / sorting. 🟢 Active.**
 
-All 8 database models (`users`, `books`, `shelves`, `shelf_books`, `shelf_collaborators`, `lendings`, `activity_events`, `refresh_tokens`), composite PKs, check constraints, partial unique index (`idx_lendings_active_book`), and initial Alembic migration are built. OWASP Argon2id password hashing, password policy validation, JWT access tokens (15m TTL), server-side hashed refresh token rotation, HttpOnly cookies, and frontend 401 transparent refresh interceptor are fully implemented and verified with 8/8 unit & integration tests passing cleanly.
+Book domain REST API endpoints (`POST`, `GET`, `PUT`, `DELETE /api/v1/books`), `BookService` server-side ownership isolation (`book.owner_id == current_user.id`), `BookRepository`, Pydantic DTO validation (`total_pages >= 1`, `current_page <= total_pages`, `rating 1..5`), and frontend library components (`BookCard`, `BookForm`, `BookList`, `/books` route) are fully implemented and verified with 13/13 unit & integration tests passing cleanly.
+
 
 
 

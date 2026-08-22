@@ -7,19 +7,15 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 > **Maintenance note:** exactly one phase should be expanded (the active one) at any time.
 > When a phase completes, collapse it, mark it `✅ Complete`, expand the next one, and update
 > the "Current Status" line in `CLAUDE.md` to match. When a phase is blocked, mark it
-> `⛔ Blocked on Phase N` instead of `Not Started`.
-
----
-
-## Current Status (top-level)
+> `⛔ Blocked on Phase N` instead of `Not Started`.## Current Status (top-level)
 
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Repository + architecture + tooling | ✅ **Complete** |
 | 1 | Database schema + migrations | ✅ **Complete** |
 | 2 | Authentication + JWT + refresh rotation | ✅ **Complete** |
-| 3 | Book domain (CRUD) | 🟢 **Active** |
-| 4 | Filtering / search / pagination / sorting | ⛔ Blocked on Phase 3 |
+| 3 | Book domain (CRUD) | ✅ **Complete** |
+| 4 | Filtering / search / pagination / sorting | 🟢 **Active** |
 | 5 | Shelves + many-to-many | ⛔ Blocked on Phase 2 |
 | 6 | Shelf RBAC | ⛔ Blocked on Phase 5 |
 | 7 | Reading progress | ⛔ Blocked on Phase 3 |
@@ -65,14 +61,14 @@ Complete. Scaffold, tooling, env setup, initial commits, and planning documents 
 Before scaffolding, produce (in a scratch note or PR description, not necessarily committed):
 1. Confirmation of the stack in `CLAUDE.md` §2, or a documented reason to deviate.
 2. The exact folder tree you'll create, matching `CLAUDE.md` §3 (or a justified variant).
-3. The dependency list for backend and frontend, each with a one-line justification per
-   §36 — no dependency without a reason a reviewer could accept.
+3. The dependency list for backend and frontend, each with a one-line justification per §36
+   — no dependency without a reason a reviewer could accept.
 4. How migrations will be managed (e.g. Alembic) — decide now, don't discover it in Phase 1.
 5. Linting/formatting tooling for both sides.
 
 ### Load-bearing rules to hold in your head
-- Controllers stay thin: validate request → authenticate → call service → serialize
-  response. Business logic never lives in a route function. (§12)
+- Controllers stay thin: validate request → authenticate → call service → serialize response.
+  Business logic never lives in a route function. (§12)
 - Do not build microservices, Kafka, event sourcing, GraphQL, or any of the infrastructure
   listed in §41 "unless a real requirement appears." BookNest's challenge is relationships,
   authorization, state, transactions, and real-time — not infrastructure theater.
@@ -228,11 +224,11 @@ equivalent) implementing refresh-and-retry.
 
 ---
 
-<details open>
-<summary><strong>PHASE 3 — Book domain (CRUD) 🟢 Active</strong></summary>
+<details>
+<summary><strong>PHASE 3 — Book domain (CRUD) ✅ Complete</strong></summary>
 
 ### Status
-🟢 Active. Authentication & User models ready. Ready for Book domain implementation.
+Complete. Book CRUD endpoints, BookService ownership enforcement, Pydantic validation, unit tests, and frontend library components complete.
 
 ### Mandatory reading
 - PDF "Books" items 6–7 (fields: title, author, status enum, total pages, current page,
@@ -255,9 +251,9 @@ equivalent) implementing refresh-and-retry.
   the service layer should still validate before hitting the DB for a clean error message.
 
 ### Completion criteria (from PDF items 6–7 + `AGENTS.md` §47)
-- [ ] Create, list, retrieve, update, delete all work
-- [ ] A book's status, total pages, current page, rating, notes are all persisted correctly
-- [ ] Ownership enforced: a user cannot retrieve/update/delete another user's book
+- [x] Create, list, retrieve, update, delete all work
+- [x] A book's status, total pages, current page, rating, notes are all persisted correctly
+- [x] Ownership enforced: a user cannot retrieve/update/delete another user's book
 
 ### Stop and ask if...
 - The status auto-transition logic (finishing a book) starts creeping into this phase — that
@@ -271,11 +267,12 @@ per §25 (even if minimal — full polish is Phase 13).
 
 ---
 
-<details>
-<summary><strong>PHASE 4 — Filtering / search / pagination / sorting ⛔ Blocked on Phase 3</strong></summary>
+<details open>
+<summary><strong>PHASE 4 — Filtering / search / pagination / sorting 🟢 Active</strong></summary>
 
 ### Status
-Blocked until book CRUD exists.
+🟢 Active. Book CRUD endpoints ready. Ready for server-side pagination, search, filter, and sorting.
+
 
 ### Mandatory reading
 - §22 Pagination — query contract (`page`, `page_size`, `search`, `status`, `sort_by`,
