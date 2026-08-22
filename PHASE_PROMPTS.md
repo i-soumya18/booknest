@@ -16,8 +16,9 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 | 2 | Authentication + JWT + refresh rotation | ✅ **Complete** |
 | 3 | Book domain (CRUD) | ✅ **Complete** |
 | 4 | Filtering / search / pagination / sorting | ✅ **Complete** |
-| 5 | Shelves + many-to-many | 🟢 **Active** |
-| 6 | Shelf RBAC | ⛔ Blocked on Phase 5 |
+| 5 | Shelves + many-to-many | ✅ **Complete** |
+| 6 | Shelf RBAC | 🟢 **Active** |
+
 
 | 7 | Reading progress | ⛔ Blocked on Phase 3 |
 | 8 | Lending | ⛔ Blocked on Phases 2, 3 |
@@ -311,11 +312,25 @@ Complete. Server-side PostgreSQL pagination, ILIKE search, status filter, combin
 Query-param-driven `GET /books` with server-side filter+search+sort+pagination, frontend
 list view wired to send those params.
 
+| 4 | Filtering / search / pagination / sorting | ✅ **Complete** |
+| 5 | Shelves + many-to-many | ✅ **Complete** |
+| 6 | Shelf RBAC | 🟢 **Active** |
+
+Order follows `AGENTS.md` §52 exactly. Phases 5 and 7 both depend only on Phase 2+3, and
+could be parallelized if you have two workstreams — but §52 recommends building sequentially
+so each phase's invariants are settled before the next one builds on them. Don't jump to UI
+polish early (§52 closing line).
+
 </details>
 
 ---
 
-per the sequential order in §52.)
+<details>
+<summary><strong>PHASE 5 — Shelves + many-to-many ✅ Complete</strong></summary>
+
+
+### Status
+Complete. Shelf CRUD, shelf_books composite PK junction table association endpoints, transactional deletion, unit tests, and frontend library components complete.
 
 ### Mandatory reading
 - §2 Shelves — shelf owns one owner, contains many books, deleting a shelf never deletes
@@ -337,10 +352,10 @@ per the sequential order in §52.)
 - Shelf deletion is transactional and must never delete the books on it. (§2, §15)
 
 ### Completion criteria (from PDF items 10–11 + `AGENTS.md` §47)
-- [ ] Create shelf, list shelves, view books on a shelf
-- [ ] Add/remove book to/from shelf via the junction table
-- [ ] Deleting a shelf leaves its books untouched
-- [ ] Deleting a book removes it from every shelf with no orphaned `shelf_books` rows
+- [x] Create shelf, list shelves, view books on a shelf
+- [x] Add/remove book to/from shelf via the junction table
+- [x] Deleting a shelf leaves its books untouched
+- [x] Deleting a book removes it from every shelf with no orphaned `shelf_books` rows
 
 ### Stop and ask if...
 - You're tempted to add a `shelf_ids` array column to `books` "just for convenience" —
@@ -353,11 +368,11 @@ Shelf CRUD, shelf↔book association endpoints, transactional shelf deletion.
 
 ---
 
-<details>
-<summary><strong>PHASE 6 — Shelf RBAC ⛔ Blocked on Phase 5</strong></summary>
+<details open>
+<summary><strong>PHASE 6 — Shelf RBAC 🟢 Active</strong></summary>
 
 ### Status
-Blocked until shelves and the shelf↔book relationship exist.
+🟢 Active. Shelves and shelf_books relationship ready. Ready for OWNER/EDITOR/VIEWER role-based access control.
 
 ### Mandatory reading
 - §3 Shelf RBAC — full OWNER/EDITOR/VIEWER capability matrix, and the critical rule: "Never

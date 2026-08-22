@@ -97,9 +97,11 @@ booknest/
 **Phase: 2 — Authentication + JWT + refresh rotation. ✅ Complete.**
 **Phase: 3 — Book domain (CRUD). ✅ Complete.**
 **Phase: 4 — Filtering / search / pagination / sorting. ✅ Complete.**
-**Phase: 5 — Shelves + many-to-many. 🟢 Active.**
+**Phase: 5 — Shelves + many-to-many. ✅ Complete.**
+**Phase: 6 — Shelf RBAC. 🟢 Active.**
 
-Server-side PostgreSQL pagination (`page`, `page_size`, `total`, `total_pages`), case-insensitive title/author ILIKE search, status filter (`WANT_TO_READ`, `READING`, `FINISHED`), combined AND filter+search composition, multi-field sorting (`created_at`, `title`, `rating`), and frontend filter bar & pagination UI are fully implemented and verified with 14/14 unit & integration tests passing cleanly.
+Shelf CRUD REST endpoints (`POST`, `GET`, `PUT`, `DELETE /api/v1/shelves`), `shelf_books` junction table association endpoints (`POST`, `DELETE /api/v1/shelves/{shelf_id}/books/{book_id}`), `ShelfService` double ownership validation, transactional shelf deletion keeping books untouched, and frontend shelf library components (`ShelfCard`, `ShelfForm`, `ShelfList`, `ShelfDetail`, `/shelves` & `/shelves/[id]` pages) are fully implemented and verified with 19/19 unit & integration tests passing cleanly.
+
 
 
 
