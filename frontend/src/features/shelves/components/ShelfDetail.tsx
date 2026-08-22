@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Book, Collaborator, PaginatedResponse, ShelfDetail as IShelfDetail, ShelfRole } from "@/types";
 import { fetchApi } from "@/lib/api/client";
 import { BookCard } from "@/features/books/components/BookCard";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface ShelfDetailProps {
   shelfId: string;
@@ -40,6 +41,17 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
     }
   }, [shelfId]);
 
+  useWebSocket(
+    useCallback(
+      (event: any) => {
+        if (event.shelf_id === shelfId) {
+          loadShelf();
+        }
+      },
+      [shelfId, loadShelf]
+    )
+  );
+
   const loadAvailableBooks = useCallback(async () => {
     try {
       const res = await fetchApi<PaginatedResponse<Book>>("/api/v1/books?page_size=100");
@@ -53,8 +65,12 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
     loadShelf();
   }, [loadShelf]);
 
+  const [actionLoading, setActionLoading] = useState(false);
+
   const handleAddBook = async () => {
     if (!selectedBookId) return;
+    setError(null);
+    setActionLoading(true);
     try {
       await fetchApi(`/api/v1/shelves/${shelfId}/books/${selectedBookId}`, {
         method: "POST",
@@ -63,25 +79,29 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
       setSelectedBookId("");
       loadShelf();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add book to shelf.");
+      setError(err instanceof Error ? err.message : "Failed to add book to shelf.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleRemoveBook = async (bookId: string) => {
-    if (!confirm("Remove this book from the shelf? (Book will remain in your library)")) return;
+    setError(null);
     try {
       await fetchApi(`/api/v1/shelves/${shelfId}/books/${bookId}`, {
         method: "DELETE",
       });
       loadShelf();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to remove book from shelf.");
+      setError(err instanceof Error ? err.message : "Failed to remove book from shelf.");
     }
   };
 
   const handleAddCollaborator = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!collabEmail.trim()) return;
+    setError(null);
+    setActionLoading(true);
 
     try {
       await fetchApi(`/api/v1/shelves/${shelfId}/collaborators`, {
@@ -91,11 +111,14 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
       setCollabEmail("");
       loadShelf();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add collaborator.");
+      setError(err instanceof Error ? err.message : "Failed to add collaborator.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleUpdateCollaboratorRole = async (userId: string, newRole: ShelfRole) => {
+    setError(null);
     try {
       await fetchApi(`/api/v1/shelves/${shelfId}/collaborators/${userId}`, {
         method: "PUT",
@@ -103,19 +126,19 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
       });
       loadShelf();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update role.");
+      setError(err instanceof Error ? err.message : "Failed to update role.");
     }
   };
 
   const handleRemoveCollaborator = async (userId: string) => {
-    if (!confirm("Remove this collaborator from the shelf?")) return;
+    setError(null);
     try {
       await fetchApi(`/api/v1/shelves/${shelfId}/collaborators/${userId}`, {
         method: "DELETE",
       });
       loadShelf();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to remove collaborator.");
+      setError(err instanceof Error ? err.message : "Failed to remove collaborator.");
     }
   };
 
@@ -412,7 +435,7 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
               key={book.id}
               book={book}
               onEdit={() => {}} // No inline edit inside shelf view
-              onDelete={canEditBooks ? handleRemoveBook : () => alert("Viewers cannot remove books.")}
+              onDelete={canEditBooks ? handleRemoveBook : () => setError("Viewers cannot remove books.")}
             />
           ))}
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Book } from "@/types";
 import { fetchApi } from "@/lib/api/client";
+import { LendBookModal, returnBook } from "@/features/lending";
 
 interface BookCardProps {
   book: Book;
@@ -16,6 +17,18 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
   const [pageInput, setPageInput] = useState<number>(book.currentPage);
   const [progressError, setProgressError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showLendModal, setShowLendModal] = useState(false);
+  const [lendError, setLendError] = useState<string | null>(null);
+
+  const handleReturn = async () => {
+    setLendError(null);
+    try {
+      await returnBook(book.id);
+      if (onProgressUpdated) onProgressUpdated();
+    } catch (err) {
+      setLendError(err instanceof Error ? err.message : "Failed to return book.");
+    }
+  };
 
   const progressPercent = Math.min(
     100,
@@ -264,6 +277,18 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
         </p>
       )}
 
+      {lendError && (
+        <div
+          style={{
+            fontSize: "0.8rem",
+            color: "var(--error-color)",
+            marginTop: "0.25rem",
+          }}
+        >
+          {lendError}
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div
         style={{
@@ -271,8 +296,39 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
           justifyContent: "flex-end",
           gap: "0.5rem",
           marginTop: "0.5rem",
+          flexWrap: "wrap",
         }}
       >
+        <button
+          onClick={() => setShowLendModal(true)}
+          style={{
+            padding: "0.4rem 0.8rem",
+            fontSize: "0.85rem",
+            borderRadius: "4px",
+            background: "#8b5cf620",
+            color: "#8b5cf6",
+            border: "1px solid #8b5cf640",
+            cursor: "pointer",
+            fontWeight: 500,
+          }}
+        >
+          🤝 Lend
+        </button>
+        <button
+          onClick={handleReturn}
+          style={{
+            padding: "0.4rem 0.8rem",
+            fontSize: "0.85rem",
+            borderRadius: "4px",
+            background: "var(--bg-card)",
+            color: "var(--text-secondary)",
+            border: "1px solid var(--border-color)",
+            cursor: "pointer",
+          }}
+          title="Mark returned if lent"
+        >
+          ↩️ Return
+        </button>
         <button
           onClick={() => onEdit(book)}
           style={{
@@ -302,6 +358,16 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
           Delete
         </button>
       </div>
+
+      {showLendModal && (
+        <LendBookModal
+          book={book}
+          onClose={() => setShowLendModal(false)}
+          onSuccess={() => {
+            if (onProgressUpdated) onProgressUpdated();
+          }}
+        />
+      )}
     </div>
   );
 }

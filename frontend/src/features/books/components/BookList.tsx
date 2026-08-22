@@ -70,12 +70,12 @@ export function BookList() {
   };
 
   const handleDelete = async (bookId: string) => {
-    if (!confirm("Are you sure you want to delete this book?")) return;
+    setError(null);
     try {
       await fetchApi(`/api/v1/books/${bookId}`, { method: "DELETE" });
       loadBooks();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete book.");
+      setError(err instanceof Error ? err.message : "Failed to delete book.");
     }
   };
 

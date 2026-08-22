@@ -53,12 +53,12 @@ export function ShelfList() {
   };
 
   const handleDelete = async (shelfId: string) => {
-    if (!confirm("Are you sure you want to delete this shelf? Books on this shelf will NOT be deleted.")) return;
+    setError(null);
     try {
       await fetchApi(`/api/v1/shelves/${shelfId}`, { method: "DELETE" });
       setShelves((prev) => prev.filter((s) => s.id !== shelfId));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete shelf.");
+      setError(err instanceof Error ? err.message : "Failed to delete shelf.");
     }
   };
 

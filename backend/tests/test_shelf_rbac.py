@@ -9,6 +9,56 @@ def _create_user_and_login(client, email: str, name: str) -> tuple[dict[str, str
     return headers, signup_resp.json()["user"]["id"]
 
 
+def test_viewer_cannot_add_book_to_shared_shelf(client):
+    headers_owner, _ = _create_user_and_login(client, "rbac_owner1@example.com", "Owner User")
+    headers_viewer, _ = _create_user_and_login(client, "rbac_viewer1@example.com", "Viewer User")
+
+    # Owner creates shelf & book
+    shelf_id = client.post(
+        "/api/v1/shelves", headers=headers_owner, json={"name": "Owner Shelf"}
+    ).json()["id"]
+    book_id = client.post(
+        "/api/v1/books",
+        headers=headers_owner,
+        json={"title": "RBAC Book", "author": "Author R", "total_pages": 200},
+    ).json()["id"]
+
+    # Share with viewer
+    client.post(
+        f"/api/v1/shelves/{shelf_id}/collaborators",
+        headers=headers_owner,
+        json={"email": "rbac_viewer1@example.com", "role": "VIEWER"},
+    )
+
+    # Viewer attempts to add book -> 403 Forbidden
+    res = client.post(f"/api/v1/shelves/{shelf_id}/books/{book_id}", headers=headers_viewer)
+    assert res.status_code == 403
+    assert res.json()["detail"]["error"]["code"] == "FORBIDDEN"
+
+
+def test_editor_cannot_manage_collaborators(client):
+    headers_owner, _ = _create_user_and_login(client, "rbac_owner2@example.com", "Owner User")
+    headers_editor, _ = _create_user_and_login(client, "rbac_editor2@example.com", "Editor User")
+
+    shelf_id = client.post(
+        "/api/v1/shelves", headers=headers_owner, json={"name": "Shared Tech"}
+    ).json()["id"]
+    client.post(
+        f"/api/v1/shelves/{shelf_id}/collaborators",
+        headers=headers_owner,
+        json={"email": "rbac_editor2@example.com", "role": "EDITOR"},
+    )
+
+    # Editor attempts to share shelf -> 403 Forbidden
+    res = client.post(
+        f"/api/v1/shelves/{shelf_id}/collaborators",
+        headers=headers_editor,
+        json={"email": "newbie@example.com", "role": "VIEWER"},
+    )
+    assert res.status_code == 403
+    assert res.json()["detail"]["error"]["code"] == "FORBIDDEN"
+
+
 def test_shelf_rbac_owner_editor_viewer(client):
     headers_owner, _ = _create_user_and_login(client, "owner@example.com", "Owner User")
     headers_editor, editor_id = _create_user_and_login(client, "editor@example.com", "Editor User")
@@ -61,43 +111,34 @@ def test_shelf_rbac_owner_editor_viewer(client):
     assert vw_shared.json()[0]["user_role"] == "VIEWER"
 
     # 4. Test Viewer role capabilities & restrictions
-    # Viewer can GET shelf
     vw_get = client.get(f"/api/v1/shelves/{s_id}", headers=headers_viewer)
     assert vw_get.status_code == 200
     assert vw_get.json()["user_role"] == "VIEWER"
 
-    # Viewer CANNOT add book -> 403 Forbidden
     vw_add = client.post(f"/api/v1/shelves/{s_id}/books/{b_id}", headers=headers_viewer)
     assert vw_add.status_code == 403
 
-    # Viewer CANNOT update shelf -> 403 Forbidden
     vw_put = client.put(f"/api/v1/shelves/{s_id}", headers=headers_viewer, json={"name": "Hacked"})
     assert vw_put.status_code == 403
 
-    # Viewer CANNOT delete shelf -> 403 Forbidden
     vw_del = client.delete(f"/api/v1/shelves/{s_id}", headers=headers_viewer)
     assert vw_del.status_code == 403
 
     # 5. Test Editor role capabilities & restrictions
-    # Editor can GET shelf
     ed_get = client.get(f"/api/v1/shelves/{s_id}", headers=headers_editor)
     assert ed_get.status_code == 200
 
-    # Editor CAN add book to shelf
     ed_add = client.post(f"/api/v1/shelves/{s_id}/books/{b_id}", headers=headers_editor)
     assert ed_add.status_code == 201
 
-    # Editor CAN remove book from shelf
     ed_rem = client.delete(f"/api/v1/shelves/{s_id}/books/{b_id}", headers=headers_editor)
     assert ed_rem.status_code == 204
 
-    # Editor CANNOT update shelf details -> 403 Forbidden
     ed_put = client.put(
         f"/api/v1/shelves/{s_id}", headers=headers_editor, json={"name": "Editor Title"}
     )
     assert ed_put.status_code == 403
 
-    # Editor CANNOT share shelf / add collaborator -> 403 Forbidden
     ed_share = client.post(
         f"/api/v1/shelves/{s_id}/collaborators",
         headers=headers_editor,
@@ -105,7 +146,6 @@ def test_shelf_rbac_owner_editor_viewer(client):
     )
     assert ed_share.status_code == 403
 
-    # Editor CANNOT delete shelf -> 403 Forbidden
     ed_del = client.delete(f"/api/v1/shelves/{s_id}", headers=headers_editor)
     assert ed_del.status_code == 403
 
@@ -126,7 +166,6 @@ def test_shelf_rbac_owner_editor_viewer(client):
     assert up_role.status_code == 200
     assert up_role.json()["role"] == "VIEWER"
 
-    # Downgraded Editor now gets 403 on add book!
     assert (
         client.post(f"/api/v1/shelves/{s_id}/books/{b_id}", headers=headers_editor).status_code
         == 403
@@ -138,5 +177,4 @@ def test_shelf_rbac_owner_editor_viewer(client):
     )
     assert rem_vw.status_code == 204
 
-    # Removed Viewer now gets 404
     assert client.get(f"/api/v1/shelves/{s_id}", headers=headers_viewer).status_code == 404

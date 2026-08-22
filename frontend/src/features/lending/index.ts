@@ -1,2 +1,3 @@
-// Lending domain feature module (Phase 8)
-export {};
+export * from "./api";
+export * from "./components/LendBookModal";
+export * from "./components/BorrowedBookList";

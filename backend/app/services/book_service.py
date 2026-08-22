@@ -5,8 +5,11 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.events.dispatcher import event_dispatcher
+from app.events.events import DomainEvent
 from app.models.book import Book
 from app.repositories.book_repository import BookRepository
+from app.repositories.lending_repository import LendingRepository
 from app.schemas.book import (
     BookCreateRequest,
     BookResponse,
@@ -23,10 +26,27 @@ class BookService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.book_repo = BookRepository(session)
+        self.lending_repo = LendingRepository(session)
 
     async def _get_and_ensure_owner(self, book_id: UUID, user_id: UUID) -> Book:
         book = await self.book_repo.get_by_id(book_id)
-        if not book or book.owner_id != user_id:
+        if not book:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": {"code": "BOOK_NOT_FOUND", "message": "Book not found"}},
+            )
+        if book.owner_id != user_id:
+            active_lending = await self.lending_repo.get_active_lending_by_book(book_id)
+            if active_lending and active_lending.borrower_id == user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail={
+                        "error": {
+                            "code": "BORROWED_BOOK_READ_ONLY",
+                            "message": "Borrowed books are read-only for borrowers",
+                        }
+                    },
+                )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={"error": {"code": "BOOK_NOT_FOUND", "message": "Book not found"}},
@@ -45,11 +65,38 @@ class BookService:
                 },
             )
         book = await self.book_repo.create_book(owner_id=owner_id, data=data)
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="BOOK_ADDED",
+                entity_type="book",
+                entity_id=book.id,
+                actor_id=owner_id,
+                book_id=book.id,
+                payload={"title": book.title, "author": book.author, "status": book.status},
+            ),
+        )
         await self.session.commit()
         return book
 
     async def get_book(self, book_id: UUID, user_id: UUID) -> Book:
-        return await self._get_and_ensure_owner(book_id=book_id, user_id=user_id)
+        book = await self.book_repo.get_by_id(book_id)
+        if not book:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": {"code": "BOOK_NOT_FOUND", "message": "Book not found"}},
+            )
+        if book.owner_id == user_id:
+            return book
+
+        active_lending = await self.lending_repo.get_active_lending_by_book(book_id)
+        if active_lending and active_lending.borrower_id == user_id:
+            return book
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {"code": "BOOK_NOT_FOUND", "message": "Book not found"}},
+        )
 
     async def list_user_books(
         self,
@@ -99,7 +146,26 @@ class BookService:
                 },
             )
 
+        old_status = book.status
         updated_book = await self.book_repo.update_book(book=book, data=data)
+
+        if old_status != updated_book.status:
+            await event_dispatcher.publish(
+                self.session,
+                DomainEvent(
+                    event_type="BOOK_STATUS_CHANGED",
+                    entity_type="book",
+                    entity_id=updated_book.id,
+                    actor_id=user_id,
+                    book_id=updated_book.id,
+                    payload={
+                        "title": updated_book.title,
+                        "old_status": old_status,
+                        "new_status": updated_book.status,
+                    },
+                ),
+            )
+
         await self.session.commit()
         return updated_book
 
@@ -142,6 +208,7 @@ class BookService:
             )
 
         # Atomic state transition
+        old_status = book.status
         if current_page == book.total_pages:
             new_status = BookStatusEnum.FINISHED.value
             finished_at = datetime.now(UTC)
@@ -161,9 +228,45 @@ class BookService:
             status=new_status,
             finished_at=finished_at,
         )
-        await self.session.commit()
 
         pct = math.floor((updated_book.current_page / updated_book.total_pages) * 100)
+
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="BOOK_PROGRESS_UPDATED",
+                entity_type="book",
+                entity_id=updated_book.id,
+                actor_id=user_id,
+                book_id=updated_book.id,
+                payload={
+                    "title": updated_book.title,
+                    "current_page": updated_book.current_page,
+                    "total_pages": updated_book.total_pages,
+                    "progress_percentage": pct,
+                    "status": updated_book.status,
+                },
+            ),
+        )
+
+        if old_status != updated_book.status:
+            await event_dispatcher.publish(
+                self.session,
+                DomainEvent(
+                    event_type="BOOK_STATUS_CHANGED",
+                    entity_type="book",
+                    entity_id=updated_book.id,
+                    actor_id=user_id,
+                    book_id=updated_book.id,
+                    payload={
+                        "title": updated_book.title,
+                        "old_status": old_status,
+                        "new_status": updated_book.status,
+                    },
+                ),
+            )
+
+        await self.session.commit()
 
         return ProgressUpdateResponse(
             id=updated_book.id,

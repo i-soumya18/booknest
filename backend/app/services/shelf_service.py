@@ -3,6 +3,8 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.events.dispatcher import event_dispatcher
+from app.events.events import DomainEvent
 from app.models.shelf import Shelf
 from app.repositories.book_repository import BookRepository
 from app.repositories.shelf_repository import ShelfRepository
@@ -67,6 +69,17 @@ class ShelfService:
 
     async def create_shelf(self, owner_id: UUID, data: ShelfCreateRequest) -> ShelfResponse:
         shelf = await self.shelf_repo.create_shelf(owner_id=owner_id, data=data)
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="SHELF_CREATED",
+                entity_type="shelf",
+                entity_id=shelf.id,
+                actor_id=owner_id,
+                shelf_id=shelf.id,
+                payload={"name": shelf.name},
+            ),
+        )
         await self.session.commit()
         resp = ShelfResponse.model_validate(shelf)
         resp.user_role = ShelfRoleEnum.OWNER
@@ -136,6 +149,17 @@ class ShelfService:
             shelf_id=shelf_id, user_id=user_id, min_role=ShelfRoleEnum.OWNER
         )
         await self.shelf_repo.delete_shelf(shelf)
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="SHELF_DELETED",
+                entity_type="shelf",
+                entity_id=shelf_id,
+                actor_id=user_id,
+                shelf_id=shelf_id,
+                payload={"name": shelf.name},
+            ),
+        )
         await self.session.commit()
 
     async def add_book_to_shelf(self, shelf_id: UUID, book_id: UUID, user_id: UUID) -> None:
@@ -151,13 +175,39 @@ class ShelfService:
             )
 
         await self.shelf_repo.add_book_to_shelf(shelf_id=shelf.id, book_id=book.id)
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="BOOK_ADDED_TO_SHELF",
+                entity_type="shelf",
+                entity_id=shelf.id,
+                actor_id=user_id,
+                book_id=book.id,
+                shelf_id=shelf.id,
+                payload={"shelf_name": shelf.name, "book_title": book.title},
+            ),
+        )
         await self.session.commit()
 
     async def remove_book_from_shelf(self, shelf_id: UUID, book_id: UUID, user_id: UUID) -> None:
         shelf, _ = await self._get_shelf_and_check_role(
             shelf_id=shelf_id, user_id=user_id, min_role=ShelfRoleEnum.EDITOR
         )
+        book = await self.book_repo.get_by_id(book_id)
+        book_title = book.title if book else "Book"
         await self.shelf_repo.remove_book_from_shelf(shelf_id=shelf.id, book_id=book_id)
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="BOOK_REMOVED_FROM_SHELF",
+                entity_type="shelf",
+                entity_id=shelf.id,
+                actor_id=user_id,
+                book_id=book_id,
+                shelf_id=shelf.id,
+                payload={"shelf_name": shelf.name, "book_title": book_title},
+            ),
+        )
         await self.session.commit()
 
     # --- Collaborator & RBAC Service Operations ---
@@ -206,6 +256,24 @@ class ShelfService:
         else:
             collab = await self.shelf_repo.add_collaborator(shelf.id, target_user.id, role)
 
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="SHELF_SHARED",
+                entity_type="collaborator",
+                entity_id=shelf.id,
+                actor_id=owner_id,
+                target_user_id=target_user.id,
+                shelf_id=shelf.id,
+                payload={
+                    "shelf_name": shelf.name,
+                    "role": role.value,
+                    "collaborator_name": target_user.name,
+                    "collaborator_email": target_user.email,
+                },
+            ),
+        )
+
         await self.session.commit()
         return CollaboratorResponse(
             user_id=target_user.id,
@@ -249,6 +317,23 @@ class ShelfService:
         assert target_user is not None
 
         collab = await self.shelf_repo.update_collaborator_role(shelf.id, target_user_id, new_role)
+
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="COLLABORATOR_ROLE_CHANGED",
+                entity_type="collaborator",
+                entity_id=shelf.id,
+                actor_id=owner_id,
+                target_user_id=target_user_id,
+                shelf_id=shelf.id,
+                payload={
+                    "shelf_name": shelf.name,
+                    "new_role": new_role.value,
+                },
+            ),
+        )
+
         await self.session.commit()
 
         return CollaboratorResponse(
@@ -282,6 +367,20 @@ class ShelfService:
             )
 
         await self.shelf_repo.remove_collaborator(shelf.id, target_user_id)
+
+        await event_dispatcher.publish(
+            self.session,
+            DomainEvent(
+                event_type="COLLABORATOR_REMOVED",
+                entity_type="collaborator",
+                entity_id=shelf.id,
+                actor_id=current_user_id,
+                target_user_id=target_user_id,
+                shelf_id=shelf.id,
+                payload={"shelf_name": shelf.name},
+            ),
+        )
+
         await self.session.commit()
 
     async def list_collaborators(

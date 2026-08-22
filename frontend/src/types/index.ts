@@ -59,3 +59,39 @@ export interface Collaborator {
   role: ShelfRole;
   createdAt: string;
 }
+
+export interface Lending {
+  id: string;
+  bookId: string;
+  ownerId: string;
+  borrowerId: string;
+  borrowedAt: string;
+  dueAt?: string | null;
+  returnedAt?: string | null;
+}
+
+export interface BorrowedBook {
+  lendingId: string;
+  book: Book;
+  ownerId: string;
+  ownerName: string;
+  ownerEmail: string;
+  borrowedAt: string;
+  dueAt?: string | null;
+}
+
+export interface LendBookRequest {
+  borrower_email?: string;
+  borrower_id?: string;
+  due_at?: string | null;
+}
+
+export interface ActivityEvent {
+  id: string;
+  userId: string;
+  eventType: string;
+  entityType: string;
+  entityId: string;
+  payload: Record<string, any>;
+  createdAt: string;
+}

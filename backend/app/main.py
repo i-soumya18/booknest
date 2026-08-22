@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import app.ws.router  # noqa: F401 - registers WebSocket event router handler
 from app.api.router import api_router
 from app.config import get_settings
 

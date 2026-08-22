@@ -34,6 +34,36 @@ def test_signup_success(client):
     assert "access_token" in data["tokens"]
 
 
+def test_signup_rejects_duplicate_email(client):
+    client.post(
+        "/api/v1/auth/signup",
+        json={"email": "dup@example.com", "password": "StrongPassword123!", "name": "User One"},
+    )
+    resp = client.post(
+        "/api/v1/auth/signup",
+        json={"email": "dup@example.com", "password": "StrongPassword123!", "name": "User Two"},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"]["error"]["code"] == "EMAIL_ALREADY_EXISTS"
+
+
+def test_login_rejects_wrong_password(client):
+    client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": "wrongpass@example.com",
+            "password": "StrongPassword123!",
+            "name": "User Pass",
+        },
+    )
+    resp = client.post(
+        "/api/v1/auth/login",
+        json={"email": "wrongpass@example.com", "password": "WrongPassword123!"},
+    )
+    assert resp.status_code == 401
+    assert resp.json()["detail"]["error"]["code"] == "INVALID_CREDENTIALS"
+
+
 def test_login_success_and_me_endpoint(client):
     signup_resp = client.post(
         "/api/v1/auth/signup",
