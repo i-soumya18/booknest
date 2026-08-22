@@ -93,9 +93,12 @@ booknest/
 ## 4. Current Status
 
 **Phase: 0 — Repository + architecture + tooling. ✅ Complete.**
-**Phase: 1 — Database schema + migrations. 🟢 Active.**
+**Phase: 1 — Database schema + migrations. ✅ Complete.**
+**Phase: 2 — Authentication + JWT + refresh rotation. ✅ Complete.**
+**Phase: 3 — Book domain (CRUD). 🟢 Active.**
 
-Backend FastAPI scaffold and Next.js App Router frontend scaffold are fully initialized, typed, and tested. Environment variables template (.env.example), Ruff linter/formatter config, ESLint config, and Alembic database migration environment are in place with zero lint errors and clean test runs.
+All 8 database models (`users`, `books`, `shelves`, `shelf_books`, `shelf_collaborators`, `lendings`, `activity_events`, `refresh_tokens`), composite PKs, check constraints, partial unique index (`idx_lendings_active_book`), and initial Alembic migration are built. OWASP Argon2id password hashing, password policy validation, JWT access tokens (15m TTL), server-side hashed refresh token rotation, HttpOnly cookies, and frontend 401 transparent refresh interceptor are fully implemented and verified with 8/8 unit & integration tests passing cleanly.
+
 
 
 > Maintenance note: update the line above every time a phase starts, completes, or gets

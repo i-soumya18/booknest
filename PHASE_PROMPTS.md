@@ -16,9 +16,9 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Repository + architecture + tooling | ✅ **Complete** |
-| 1 | Database schema + migrations | 🟢 **Active** |
-| 2 | Authentication + JWT + refresh rotation | ⛔ Blocked on Phase 1 |
-| 3 | Book domain (CRUD) | ⛔ Blocked on Phase 2 |
+| 1 | Database schema + migrations | ✅ **Complete** |
+| 2 | Authentication + JWT + refresh rotation | ✅ **Complete** |
+| 3 | Book domain (CRUD) | 🟢 **Active** |
 | 4 | Filtering / search / pagination / sorting | ⛔ Blocked on Phase 3 |
 | 5 | Shelves + many-to-many | ⛔ Blocked on Phase 2 |
 | 6 | Shelf RBAC | ⛔ Blocked on Phase 5 |
@@ -102,11 +102,11 @@ initial commit history, this repo's three planning docs committed.
 
 ---
 
-<details open>
-<summary><strong>PHASE 1 — Database schema + migrations 🟢 Active</strong></summary>
+<details>
+<summary><strong>PHASE 1 — Database schema + migrations ✅ Complete</strong></summary>
 
 ### Status
-🟢 Active. Phase 0 setup and migration tooling complete. Ready for schema implementation.
+Complete. All 8 core entity tables, foreign keys, check constraints, composite primary keys, partial unique index (`idx_lendings_active_book`), and initial Alembic migration script created.
 
 ### Mandatory reading
 - §13 Database — the seven core entities and their relationships (User 1:N Book, User 1:N
@@ -142,15 +142,15 @@ initial commit history, this repo's three planning docs committed.
 - `refresh_tokens` stores a **hash** of the token, never the raw token. (§17)
 
 ### Completion criteria (from `AGENTS.md` §13, §14, §52)
-- [ ] All 8 tables exist: `users, books, shelves, shelf_books, shelf_collaborators, lendings,
+- [x] All 8 tables exist: `users, books, shelves, shelf_books, shelf_collaborators, lendings,
       activity_events, refresh_tokens`
-- [ ] Every relationship in §13's list is represented by an actual FK
-- [ ] `users.email` UNIQUE, `books.rating` CHECK 1..5, `books.current_page >= 0` enforced at DB level
-- [ ] Partial unique index/constraint prevents two simultaneous active lendings on one book
-- [ ] Deleting a book cascades cleanup of its `shelf_books` rows with no orphans; deleting a
+- [x] Every relationship in §13's list is represented by an actual FK
+- [x] `users.email` UNIQUE, `books.rating` CHECK 1..5, `books.current_page >= 0` enforced at DB level
+- [x] Partial unique index/constraint prevents two simultaneous active lendings on one book
+- [x] Deleting a book cascades cleanup of its `shelf_books` rows with no orphans; deleting a
       shelf cascades cleanup of `shelf_books` and `shelf_collaborators` without touching `books`
-- [ ] All indexes listed in §44 exist
-- [ ] Migrations run cleanly on a fresh database from a clean clone
+- [x] All indexes listed in §44 exist
+- [x] Migrations run cleanly on a fresh database from a clean clone
 
 ### Stop and ask if...
 - Your ORM/DB choice can't express a partial unique index cleanly — this is a real
@@ -168,10 +168,10 @@ verified against a clean database.
 ---
 
 <details>
-<summary><strong>PHASE 2 — Authentication + JWT + refresh rotation ⛔ Blocked on Phase 1</strong></summary>
+<summary><strong>PHASE 2 — Authentication + JWT + refresh rotation ✅ Complete</strong></summary>
 
 ### Status
-Blocked until the `users` and `refresh_tokens` tables exist.
+Complete. Argon2id password hashing, documented password policy, JWT access token issuance, server-side hashed refresh token rotation, HttpOnly cookie handling, protected endpoint middleware, and frontend 401 transparent refresh interceptor are live and verified.
 
 ### Mandatory reading
 - §17 Authentication — Argon2 only, JWT claim discipline (never put password, refresh token,
@@ -204,13 +204,13 @@ Blocked until the `users` and `refresh_tokens` tables exist.
   the frontend must transparently refresh-and-retry exactly once — never an infinite loop. (§18)
 
 ### Completion criteria (from `AGENTS.md` §47 + PDF items 1–5)
-- [ ] Signup works, with email format validation and the documented password policy enforced
-- [ ] Login works, logout works
-- [ ] Refresh works and rotates the refresh token
-- [ ] Passwords are Argon2-hashed, never stored or logged in plaintext
-- [ ] Protected endpoints return 401 when unauthenticated
-- [ ] Expired access token returns 401; frontend refresh-and-retry works transparently
-- [ ] A user cannot see or modify another user's data via any endpoint built so far
+- [x] Signup works, with email format validation and the documented password policy enforced
+- [x] Login works, logout works
+- [x] Refresh works and rotates the refresh token
+- [x] Passwords are Argon2-hashed, never stored or logged in plaintext
+- [x] Protected endpoints return 401 when unauthenticated
+- [x] Expired access token returns 401; frontend refresh-and-retry works transparently
+- [x] A user cannot see or modify another user's data via any endpoint built so far
 
 ### Stop and ask if...
 - You're unsure whether to store the refresh token in an HttpOnly cookie vs. elsewhere — this
@@ -228,11 +228,11 @@ equivalent) implementing refresh-and-retry.
 
 ---
 
-<details>
-<summary><strong>PHASE 3 — Book domain (CRUD) ⛔ Blocked on Phase 2</strong></summary>
+<details open>
+<summary><strong>PHASE 3 — Book domain (CRUD) 🟢 Active</strong></summary>
 
 ### Status
-Blocked until authentication middleware exists (books are owned by authenticated users).
+🟢 Active. Authentication & User models ready. Ready for Book domain implementation.
 
 ### Mandatory reading
 - PDF "Books" items 6–7 (fields: title, author, status enum, total pages, current page,
