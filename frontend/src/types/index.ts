@@ -46,3 +46,7 @@ export interface Shelf {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ShelfDetail extends Shelf {
+  books: Book[];
+}
