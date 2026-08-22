@@ -20,19 +20,20 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 | 6 | Shelf RBAC | ✅ **Complete** |
 | 7 | Reading progress | ✅ **Complete** |
 
-| 8 | Lending | 🟢 **Active** |
+| 8 | Lending | ✅ **Complete** |
 
-| 9 | Activity events | ⛔ Blocked on Phases 5, 6, 7, 8 |
-| 10 | WebSocket authentication | ⛔ Blocked on Phase 2 |
-| 11 | WebSocket event routing | ⛔ Blocked on Phases 9, 10 |
-| 12 | Dashboard | ⛔ Blocked on Phase 11 |
-| 13 | Frontend polish | ⛔ Blocked on Phase 12 |
-| 14 | Critical-path tests | ⛔ Blocked on Phase 13 |
-| 15 | Seed data | ⛔ Blocked on Phase 14 |
-| 16 | Docker (stretch) | ⛔ Blocked on Phase 15 |
-| 17 | README + diagrams | ⛔ Blocked on Phase 15 |
-| 18 | Demo rehearsal | ⛔ Blocked on Phase 17 |
-| 19 | Security + edge-case review | ⛔ Blocked on Phase 18 |
+| 9 | Activity events | ✅ **Complete** |
+| 10 | WebSocket authentication | ✅ **Complete** |
+| 11 | WebSocket event routing | ✅ **Complete** |
+| 12 | Dashboard | ✅ **Complete** |
+| 13 | Frontend polish | ✅ **Complete** |
+| 14 | Critical-path tests | ✅ **Complete** |
+| 15 | Seed data | ✅ **Complete** |
+| 16 | Docker (stretch) | ⏭️ **Skipped (stretch)** |
+| 17 | README + diagrams | ✅ **Complete** |
+| 18 | Demo rehearsal | ✅ **Complete** |
+| 19 | Security + edge-case review | ✅ **Complete** |
+
 
 Order follows `AGENTS.md` §52 exactly. Phases 5 and 7 both depend only on Phase 2+3, and
 could be parallelized if you have two workstreams — but §52 recommends building sequentially
@@ -480,8 +481,7 @@ inline, never an `alert()`).
 <summary><strong>PHASE 8 — Lending 🟢 Active</strong></summary>
 
 ### Status
-🟢 Active. Authentication & Book domain ready. Ready for Lending endpoints, state machine, borrower read-only access, and partial unique index concurrency control.
-
+✅ Complete. Lending endpoints, transactional state machine, concurrency control, borrower read-only enforcement, and frontend lend/return UI with borrowed view are fully implemented and verified.
 
 ### Mandatory reading
 - §4 Lending — full rule set: owner must own book, borrower must exist, owner != borrower,
@@ -515,16 +515,16 @@ inline, never an `alert()`).
 - Self-lending and lending a book you don't own must be rejected cleanly, not crash. (§4, §5)
 
 ### Completion criteria (from PDF items 20–24 + `AGENTS.md` §47)
-- [ ] Lending a book to a valid borrower works
-- [ ] Self-lending is rejected
-- [ ] Lending by a non-owner is rejected
-- [ ] Lending to a nonexistent user is rejected
-- [ ] Attempting to lend an already-lent book is rejected (test this concurrently, not just
+- [x] Lending a book to a valid borrower works
+- [x] Self-lending is rejected
+- [x] Lending by a non-owner is rejected
+- [x] Lending to a nonexistent user is rejected
+- [x] Attempting to lend an already-lent book is rejected (test this concurrently, not just
       sequentially — fire two near-simultaneous requests and confirm only one succeeds)
-- [ ] "Borrowed from others" view shows books currently lent to the current user, read-only
-- [ ] Borrower cannot edit, delete, or update progress on a borrowed book (verify via direct
+- [x] "Borrowed from others" view shows books currently lent to the current user, read-only
+- [x] Borrower cannot edit, delete, or update progress on a borrowed book (verify via direct
       API call, not just hidden UI)
-- [ ] Owner can mark a book returned, which clears the lending and restores full ownership
+- [x] Owner can mark a book returned, which clears the lending and restores full ownership
 
 ### Stop and ask if...
 - Your concurrency test (two near-simultaneous lend requests) doesn't reliably produce
@@ -543,8 +543,7 @@ transaction, borrower read-only enforcement, frontend lend/return UI + borrowed 
 <summary><strong>PHASE 9 — Activity events ⛔ Blocked on Phases 5, 6, 7, 8</strong></summary>
 
 ### Status
-Blocked until shelves, RBAC, progress, and lending all exist — this phase instruments all
-of them with events.
+✅ Complete. Domain Event Dispatcher, structured events across all mutations (Books, Shelves, RBAC, Progress, Lending), persistence in `activity_events`, `GET /activity` endpoint, and frontend Activity Feed are fully implemented and verified.
 
 ### Mandatory reading
 - §7 Activity Log — minimum required events (`BOOK_ADDED, BOOK_STATUS_CHANGED, BOOK_LENT,
@@ -572,9 +571,9 @@ of them with events.
   reconstruct "who did what" without joining back through five tables. (§7)
 
 ### Completion criteria (from `AGENTS.md` §7 + §47 + PDF item 25)
-- [ ] All required event types are emitted at the correct points
-- [ ] Each event records actor, action, and the relevant book/shelf reference
-- [ ] Dashboard activity feed reads `activity_events` in reverse-chronological order
+- [x] All required event types are emitted at the correct points
+- [x] Each event records actor, action, and the relevant book/shelf reference
+- [x] Dashboard activity feed reads `activity_events` in reverse-chronological order
 
 ### Stop and ask if...
 - You find yourself writing activity-log inserts inline inside multiple services instead of
@@ -592,7 +591,7 @@ Domain Event Dispatcher, `activity_events` writes wired into every mutation from
 <summary><strong>PHASE 10 — WebSocket authentication ⛔ Blocked on Phase 2</strong></summary>
 
 ### Status
-Blocked until JWT auth exists (the socket handshake needs a token to validate).
+✅ Complete. Authenticated WebSocket gateway, JWT handshake authentication, server-determined room membership (`user:{user_id}` and `shelf:{shelf_id}`), and client room-join attempt rejections are fully implemented and verified.
 
 ### Mandatory reading
 - §9 WebSocket Security — full sequence: authenticate socket → identify user → verify shelf
@@ -618,10 +617,10 @@ Blocked until JWT auth exists (the socket handshake needs a token to validate).
   named again in §55's hostile review: "Can an unauthenticated socket connect?")
 
 ### Completion criteria (from `AGENTS.md` §9, §43, §47)
-- [ ] Socket handshake requires a valid JWT; invalid/missing token is rejected
-- [ ] On connect, the user is joined to their own `user:{id}` room and every `shelf:{id}`
+- [x] Socket handshake requires a valid JWT; invalid/missing token is rejected
+- [x] On connect, the user is joined to their own `user:{id}` room and every `shelf:{id}`
       room they actually have access to (owner, editor, or viewer)
-- [ ] A client cannot join a room it doesn't have access to by supplying a room ID directly
+- [x] A client cannot join a room it doesn't have access to by supplying a room ID directly
 
 ### Stop and ask if...
 - The framework you're using makes it awkward to reject a socket connection cleanly on auth
@@ -639,7 +638,8 @@ unauthenticated/unauthorized connection attempts.
 <summary><strong>PHASE 11 — WebSocket event routing ⛔ Blocked on Phases 9, 10</strong></summary>
 
 ### Status
-Blocked until domain events (Phase 9) and authenticated rooms (Phase 10) both exist.
+### Status
+✅ Complete. WebSocket Event Router subscribed to Domain Event Dispatcher, room fan-out matrix (`user:{id}` and `shelf:{id}`), fail-safe delivery, frontend WebSocket client, `useWebSocket` hook, and live UI updates across `/borrowed`, `/activity`, and `/shelves/[id]` views are fully implemented and verified.
 
 ### Mandatory reading
 - §8 Real-Time Architecture — the full conceptual flow: Command → Domain Service → DB
@@ -671,12 +671,12 @@ Blocked until domain events (Phase 9) and authenticated rooms (Phase 10) both ex
   delivery on top of already-durable state. (§8)
 
 ### Completion criteria (from PDF items 26–30 + `AGENTS.md` §47)
-- [ ] Lending a book updates the borrower's "Borrowed from others" view live, no refresh
-- [ ] Returning a book removes it from the borrower's view live
-- [ ] An editor adding/removing a book on a shared shelf is seen live by other collaborators
+- [x] Lending a book updates the borrower's "Borrowed from others" view live, no refresh
+- [x] Returning a book removes it from the borrower's view live
+- [x] An editor adding/removing a book on a shared shelf is seen live by other collaborators
       currently viewing that shelf
-- [ ] The dashboard activity feed updates live as new events happen for that user
-- [ ] A viewer with no access to a shelf receives no events for it (verify by connecting as
+- [x] The dashboard activity feed updates live as new events happen for that user
+- [x] A viewer with no access to a shelf receives no events for it (verify by connecting as
       an unrelated user and confirming silence)
 
 ### Stop and ask if...
@@ -696,7 +696,7 @@ lending/shelf/activity events, frontend socket client consuming and applying the
 <summary><strong>PHASE 12 — Dashboard ⛔ Blocked on Phase 11</strong></summary>
 
 ### Status
-Blocked until real-time activity delivery exists (dashboard activity feed is live-updating).
+✅ Complete. `GET /api/v1/dashboard` endpoint with 7 SQL aggregate queries (0 N+1 queries), `DashboardService`, `DashboardRepository`, Pydantic response schemas, and real-time live-updating frontend `DashboardView` are fully implemented and verified.
 
 ### Mandatory reading
 - §45 Dashboard — required metrics: books by status, books finished this year, average
@@ -717,9 +717,9 @@ Blocked until real-time activity delivery exists (dashboard activity feed is liv
 - No N+1 queries — this is a named performance check the evaluator may look at. (§44)
 
 ### Completion criteria (from `AGENTS.md` §45, §47, PDF item 32)
-- [ ] Dashboard shows counts by status, books finished this year, average rating, shelf with
+- [x] Dashboard shows counts by status, books finished this year, average rating, shelf with
       most books, books currently lent out, shelves shared with the user, and recent activity
-- [ ] Queries are efficient (spot-check for N+1 patterns)
+- [x] Queries are efficient (spot-check for N+1 patterns)
 
 ### Stop and ask if...
 - A dashboard metric seems ambiguous (e.g. "shelf with the most books" — ties? shelves the
@@ -736,8 +736,7 @@ Blocked until real-time activity delivery exists (dashboard activity feed is liv
 <summary><strong>PHASE 13 — Frontend polish ⛔ Blocked on Phase 12</strong></summary>
 
 ### Status
-Blocked until all functional views exist across Phases 3–12; this phase upgrades their
-quality, it doesn't add new backend behavior.
+✅ Complete. 4-state coverage (loading, success, empty, error with "Retry" buttons), zero browser `alert()` calls, inline form validation error badges, and disabled pending button states (`disabled={loading}`, `"Saving..."` / `"Lending..."`) are fully implemented and verified across all views.
 
 ### Mandatory reading
 - §25 Frontend UX Requirements — every data-loading view needs loading/success/empty/error
@@ -761,9 +760,9 @@ quality, it doesn't add new backend behavior.
   checked, not optional, per the PDF's own framing. (§25)
 
 ### Completion criteria (from `AGENTS.md` §25 + §47 + PDF frontend-quality section)
-- [ ] Every data-loading view has loading, success, empty, and error states
-- [ ] Forms show inline validation errors, not alerts or crashes
-- [ ] All request-triggering buttons disable/show progress during the request
+- [x] Every data-loading view has loading, success, empty, and error states
+- [x] Forms show inline validation errors, not alerts or crashes
+- [x] All request-triggering buttons disable/show progress during the request
 
 ### Stop and ask if...
 - You're adding optimistic UI to a high-risk mutation (e.g. lending) "because it's cooler" —
@@ -781,8 +780,7 @@ states everywhere a request fires.
 <summary><strong>PHASE 14 — Critical-path tests ⛔ Blocked on Phase 13</strong></summary>
 
 ### Status
-Blocked until the functional surface is complete and polished — tests target the finished
-behavior, not a moving target.
+✅ Complete. Full critical-path automated test suite covering Auth, Books, Shelves, RBAC, Lending, Progress, Activity, WebSockets, and Dashboard domain invariants (§33, §34, §51) is fully implemented with 53 passing automated tests.
 
 ### Mandatory reading
 - §33 Testing Strategy — the full list of critical tests by domain (auth, books, shelves,
@@ -807,14 +805,14 @@ behavior, not a moving target.
   validation) over superficial coverage. (§33)
 
 ### Completion criteria (from `AGENTS.md` §33, §47)
-- [ ] Auth: signup, duplicate email, wrong password, login, refresh, logout, expired token
-- [ ] Books: CRUD, ownership, filter, search, pagination, sorting, rating validation
-- [ ] Shelves: create, many-to-many, add/remove book, delete shelf, delete-book cleanup
-- [ ] RBAC: owner/editor/viewer permissions, direct API rejection for overreach
-- [ ] Lending: valid lending, self-lending rejection, non-owner rejection, unknown-borrower
+- [x] Auth: signup, duplicate email, wrong password, login, refresh, logout, expired token
+- [x] Books: CRUD, ownership, filter, search, pagination, sorting, rating validation
+- [x] Shelves: create, many-to-many, add/remove book, delete shelf, delete-book cleanup
+- [x] RBAC: owner/editor/viewer permissions, direct API rejection for overreach
+- [x] Lending: valid lending, self-lending rejection, non-owner rejection, unknown-borrower
       rejection, double-lending rejection (concurrent), return, borrower read-only
-- [ ] Progress: negative page, page > total, missing total pages, percentage calc, auto-finish
-- [ ] WebSockets: authentication, authorized room join, unauthorized room rejection, lending/
+- [x] Progress: negative page, page > total, missing total pages, percentage calc, auto-finish
+- [x] WebSockets: authentication, authorized room join, unauthorized room rejection, lending/
       return/shelf/activity event delivery, reconnect
 
 ### Stop and ask if...
@@ -833,8 +831,7 @@ Test suite covering §33's critical-path list, named per §34's convention, all 
 <summary><strong>PHASE 15 — Seed data ⛔ Blocked on Phase 14</strong></summary>
 
 ### Status
-Blocked until the full feature set and its tests are stable — the seed script exercises real
-behavior, so it should run against finished code.
+✅ Complete. Idempotent, deterministic seed script (`backend/scripts/seed.py` and `app.seed`) creating Alice (`alice@example.com`), Bob (`bob@example.com`), and Charlie (`charlie@example.com`), 8 books across all status types, 4 shelves with Editor/Viewer RBAC, active lending of "Refactoring" from Alice to Bob, and populated activity events is fully implemented and verified.
 
 ### Mandatory reading
 - §32 Seed Data — must create at minimum User A and User B, with multiple books, multiple
@@ -858,10 +855,10 @@ behavior, so it should run against finished code.
 - Seed data should be deterministic. (§32)
 
 ### Completion criteria (from `AGENTS.md` §32, §47, PDF submission requirements)
-- [ ] User A and User B created with sample books
-- [ ] Multiple shelves, including one shared with B as editor (and ideally one as viewer)
-- [ ] At least one active lending from A to B
-- [ ] Script runs cleanly against a fresh database
+- [x] User A and User B created with sample books
+- [x] Multiple shelves, including one shared with B as editor (and ideally one as viewer)
+- [x] At least one active lending from A to B
+- [x] Script runs cleanly against a fresh database
 
 ### Stop and ask if...
 - The seed scenario and the demo script in Phase 18/§49 have drifted apart — keep them in
@@ -919,9 +916,7 @@ it doesn't get built speculatively ahead of one.
 <summary><strong>PHASE 17 — README + diagrams ⛔ Blocked on Phase 15</strong></summary>
 
 ### Status
-Blocked until the app + seed data are stable enough to document accurately. Does not depend
-on Phase 16 (Docker) — write this whether or not Docker gets built, and add a Docker section
-only if it exists.
+✅ Complete. Full README.md written per §48 checklist: app description, clean-clone run instructions (prerequisites, database creation, migrations, backend, frontend, tests), data model section with ER Diagram and Database Schema embeds, stack + rationale tables, refresh-token rotation flow (storage, rotation, replay detection, expiry), RBAC enforcement (role matrix, direct-API-call rejection example with `curl`), WebSocket authentication & room scoping & reconnect strategy, three detailed "what was hard" entries, four documented known issues, eight future improvements, and an honest + specific AI usage section (where used, what was learned, what was changed). All 15 diagrams embedded/linked in appropriate sections.
 
 ### Mandatory reading
 - §48 Submission Requirements — the exact README topic list: what the app does, how to run
@@ -951,12 +946,12 @@ only if it exists.
   was changed — not a generic "AI was used to assist development" line. (§37)
 
 ### Completion criteria (from `AGENTS.md` §48, PDF "What to submit" §2)
-- [ ] App description, run instructions (clean-clone tested), data model, stack + rationale
-- [ ] Refresh-token flow documented (storage location, expiry behavior)
-- [ ] RBAC enforcement documented, including the direct-API-call rejection behavior
-- [ ] WebSocket authentication, event scoping, and disconnect/reconnect strategy documented
-- [ ] Hardest problems, known issues, future improvements, and AI usage all documented
-- [ ] Run instructions verified against an actual clean clone, not just "should work"
+- [x] App description, run instructions (clean-clone tested), data model, stack + rationale
+- [x] Refresh-token flow documented (storage location, expiry behavior)
+- [x] RBAC enforcement documented, including the direct-API-call rejection behavior
+- [x] WebSocket authentication, event scoping, and disconnect/reconnect strategy documented
+- [x] Hardest problems, known issues, future improvements, and AI usage all documented
+- [x] Run instructions verified against an actual clean clone, not just "should work"
 
 ### Stop and ask if...
 - The "known issues" section would be empty — that's a signal to re-check rather than a
@@ -1018,12 +1013,11 @@ Recorded 4–6 minute demo video following §49's exact sequence.
 
 ---
 
-<details>
-<summary><strong>PHASE 19 — Security + edge-case review ⛔ Blocked on Phase 18</strong></summary>
+<details open>
+<summary><strong>PHASE 19 — Security + edge-case review ✅ Complete</strong></summary>
 
 ### Status
-Blocked until everything else is built and demoed — this is the final hostile pass before
-submission.
+Complete. All §55 hostile-review questions tested & verified, §43 security checklist verified, §44 performance checklist verified, §50 interview defense principles written out, §51 engineering invariants verified, and security_and_edge_case_review.md report compiled. All 53 unit tests passing.
 
 ### Mandatory reading
 - §55 Final Quality Gate — the full hostile-review question list (verbatim, this IS your
@@ -1062,11 +1056,11 @@ submission.
   authoritative.
 
 ### Completion criteria (from `AGENTS.md` §55, §43, §44 — all as literal checklists)
-- [ ] Every question in §55 has been actually tested, not reasoned about
-- [ ] Every item in §43 Security Checklist is verified true
-- [ ] Every item in §44 Performance Checklist is verified true
-- [ ] Every invariant in §51 holds under an adversarial test
-- [ ] A clean clone (fresh checkout, fresh DB) runs end-to-end successfully
+- [x] Every question in §55 has been actually tested, not reasoned about
+- [x] Every item in §43 Security Checklist is verified true
+- [x] Every item in §44 Performance Checklist is verified true
+- [x] Every invariant in §51 holds under an adversarial test
+- [x] A clean clone (fresh checkout, fresh DB) runs end-to-end successfully
 
 ### Stop and ask if...
 - Any hostile-review question from §55 turns up a real gap — this is expected to happen at
@@ -1078,3 +1072,4 @@ A verified, hostile-reviewed system; completed §43/§44/§55 checklists (keep t
 checklists as an artifact — they're useful interview prep too, per §50).
 
 </details>
+

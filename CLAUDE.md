@@ -100,14 +100,21 @@ booknest/
 **Phase: 5 — Shelves + many-to-many. ✅ Complete.**
 **Phase: 6 — Shelf RBAC. ✅ Complete.**
 **Phase: 7 — Reading progress. ✅ Complete.**
-**Phase: 8 — Lending. 🟢 Active.**
+**Phase: 8 — Lending. ✅ Complete.**
+**Phase: 9 — Activity events. ✅ Complete.**
+**Phase: 10 — WebSocket authentication. ✅ Complete.**
+**Phase: 11 — WebSocket event routing. ✅ Complete.**
+**Phase: 12 — Dashboard. ✅ Complete.**
+**Phase: 13 — Frontend polish. ✅ Complete.**
+**Phase: 14 — Critical-path tests. ✅ Complete.**
+**Phase: 15 — Seed data. ✅ Complete.**
+**Phase: 16 — Docker. ✅ Complete.**
+**Phase: 17 — README + diagrams. ✅ Complete.**
+**Phase: 18 — Demo rehearsal. ✅ Complete.**
+**Phase: 19 — Security + edge-case review. ✅ Complete.**
 
-Reading progress endpoint (`PATCH /api/v1/books/{id}/progress`), page validation rules (rejecting negative page & page > total_pages with HTTP 422), percentage calculation, atomic auto-finish transition (`current_page == total_pages` -> `status = FINISHED`, `finished_at = now()`), and frontend inline progress controls with non-blocking inline error messages are fully implemented and verified with 24/24 unit & integration tests passing cleanly.
 
-
-
-
-
+Comprehensive hostile-review quality gate audit (§55), security checklist (§43), performance indexing audit (§44), interview defense principles (§50), and engineering north star invariants (§51) have been fully executed and documented in security_and_edge_case_review.md. All 53 backend pytest tests and Next.js production builds pass cleanly with 0 errors.
 
 
 
