@@ -99,9 +99,11 @@ booknest/
 **Phase: 4 — Filtering / search / pagination / sorting. ✅ Complete.**
 **Phase: 5 — Shelves + many-to-many. ✅ Complete.**
 **Phase: 6 — Shelf RBAC. ✅ Complete.**
-**Phase: 7 — Reading progress. 🟢 Active.**
+**Phase: 7 — Reading progress. ✅ Complete.**
+**Phase: 8 — Lending. 🟢 Active.**
 
-Role-Based Access Control (RBAC) supporting `OWNER`, `EDITOR`, and `VIEWER` roles, collaborator sharing by email (`POST /shelves/{id}/collaborators`), role modification (`PUT`), collaborator removal (`DELETE`), "Shared with me" view (`GET /shelves/shared-with-me`), strict 403 Forbidden enforcement on unauthorized mutations (curl-verifiable server-side security), and frontend RBAC management controls are fully implemented and verified with 20/20 unit & integration tests passing cleanly.
+Reading progress endpoint (`PATCH /api/v1/books/{id}/progress`), page validation rules (rejecting negative page & page > total_pages with HTTP 422), percentage calculation, atomic auto-finish transition (`current_page == total_pages` -> `status = FINISHED`, `finished_at = now()`), and frontend inline progress controls with non-blocking inline error messages are fully implemented and verified with 24/24 unit & integration tests passing cleanly.
+
 
 
 

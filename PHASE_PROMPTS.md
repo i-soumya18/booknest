@@ -18,10 +18,10 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 | 4 | Filtering / search / pagination / sorting | ✅ **Complete** |
 | 5 | Shelves + many-to-many | ✅ **Complete** |
 | 6 | Shelf RBAC | ✅ **Complete** |
+| 7 | Reading progress | ✅ **Complete** |
 
-| 7 | Reading progress | 🟢 **Active** |
+| 8 | Lending | 🟢 **Active** |
 
-| 8 | Lending | ⛔ Blocked on Phases 2, 3 |
 | 9 | Activity events | ⛔ Blocked on Phases 5, 6, 7, 8 |
 | 10 | WebSocket authentication | ⛔ Blocked on Phase 2 |
 | 11 | WebSocket event routing | ⛔ Blocked on Phases 9, 10 |
@@ -423,11 +423,12 @@ Role-based authorization dependency, shelf sharing endpoints, "Shared with me" v
 
 ---
 
-<details open>
-<summary><strong>PHASE 7 — Reading progress 🟢 Active</strong></summary>
+<details>
+<summary><strong>PHASE 7 — Reading progress ✅ Complete</strong></summary>
+
 
 ### Status
-🟢 Active. Book domain ready. Ready for Reading Progress page updates, percentage calculation, and atomic auto-finish state machine.
+Complete. Reading progress endpoint (PATCH /books/{id}/progress), page validation rules (rejecting negative page and page > total_pages with 422), percentage formula, atomic auto-finish transition, and frontend inline progress controls complete.
 
 ### Mandatory reading
 - §6 Reading Progress — validation rules (`current_page >= 0`, `current_page <= total_pages`,
@@ -455,11 +456,11 @@ Role-based authorization dependency, shelf sharing endpoints, "Shared with me" v
   all. (§6, §15)
 
 ### Completion criteria (from PDF items 17–19 + `AGENTS.md` §47)
-- [ ] Progress updates work for books in `READING` status, with correct percentage
-- [ ] Negative page rejected with a clear error
-- [ ] Page > total_pages rejected with a clear error
-- [ ] Progress update rejected when total_pages is unset, with a clear error
-- [ ] Reaching total_pages auto-transitions to `FINISHED` and sets `finished_at`, atomically
+- [x] Progress updates work for books in `READING` status, with correct percentage
+- [x] Negative page rejected with a clear error
+- [x] Page > total_pages rejected with a clear error
+- [x] Progress update rejected when total_pages is unset, with a clear error
+- [x] Reaching total_pages auto-transitions to `FINISHED` and sets `finished_at`, atomically
 
 ### Stop and ask if...
 - You're unsure whether progress updates should be allowed on non-`READING` books (e.g.
@@ -475,12 +476,12 @@ inline, never an `alert()`).
 
 ---
 
-<details>
-<summary><strong>PHASE 8 — Lending ⛔ Blocked on Phases 2, 3</strong></summary>
+<details open>
+<summary><strong>PHASE 8 — Lending 🟢 Active</strong></summary>
 
 ### Status
-Blocked until auth and book CRUD exist. This is the highest-risk phase — the assignment
-calls lending out as "the hard feature: cross-user state and rules."
+🟢 Active. Authentication & Book domain ready. Ready for Lending endpoints, state machine, borrower read-only access, and partial unique index concurrency control.
+
 
 ### Mandatory reading
 - §4 Lending — full rule set: owner must own book, borrower must exist, owner != borrower,
