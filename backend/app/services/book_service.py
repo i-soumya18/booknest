@@ -1,4 +1,5 @@
 import math
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -13,6 +14,7 @@ from app.schemas.book import (
     BookStatusEnum,
     BookUpdateRequest,
     PaginatedResponse,
+    ProgressUpdateResponse,
     SortOrderEnum,
 )
 
@@ -100,6 +102,77 @@ class BookService:
         updated_book = await self.book_repo.update_book(book=book, data=data)
         await self.session.commit()
         return updated_book
+
+    async def update_reading_progress(
+        self, book_id: UUID, user_id: UUID, current_page: int
+    ) -> ProgressUpdateResponse:
+        book = await self._get_and_ensure_owner(book_id=book_id, user_id=user_id)
+
+        if current_page < 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error": {
+                        "code": "INVALID_PROGRESS",
+                        "message": "current_page cannot be negative",
+                    }
+                },
+            )
+
+        if not book.total_pages or book.total_pages <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error": {
+                        "code": "INVALID_TOTAL_PAGES",
+                        "message": "total_pages must be set and greater than 0",
+                    }
+                },
+            )
+
+        if current_page > book.total_pages:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error": {
+                        "code": "INVALID_PROGRESS",
+                        "message": "current_page cannot exceed total_pages",
+                    }
+                },
+            )
+
+        # Atomic state transition
+        if current_page == book.total_pages:
+            new_status = BookStatusEnum.FINISHED.value
+            finished_at = datetime.now(UTC)
+        elif book.status == BookStatusEnum.WANT_TO_READ.value and current_page > 0:
+            new_status = BookStatusEnum.READING.value
+            finished_at = None
+        elif book.status == BookStatusEnum.FINISHED.value and current_page < book.total_pages:
+            new_status = BookStatusEnum.READING.value
+            finished_at = None
+        else:
+            new_status = book.status
+            finished_at = book.finished_at
+
+        updated_book = await self.book_repo.update_progress(
+            book=book,
+            current_page=current_page,
+            status=new_status,
+            finished_at=finished_at,
+        )
+        await self.session.commit()
+
+        pct = math.floor((updated_book.current_page / updated_book.total_pages) * 100)
+
+        return ProgressUpdateResponse(
+            id=updated_book.id,
+            current_page=updated_book.current_page,
+            total_pages=updated_book.total_pages,
+            progress_percentage=pct,
+            status=BookStatusEnum(updated_book.status),
+            finished_at=updated_book.finished_at,
+        )
 
     async def delete_book(self, book_id: UUID, user_id: UUID) -> None:
         book = await self._get_and_ensure_owner(book_id=book_id, user_id=user_id)

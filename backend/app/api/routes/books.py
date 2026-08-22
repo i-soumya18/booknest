@@ -13,6 +13,8 @@ from app.schemas.book import (
     BookStatusEnum,
     BookUpdateRequest,
     PaginatedResponse,
+    ProgressUpdateRequest,
+    ProgressUpdateResponse,
     SortOrderEnum,
 )
 from app.services.book_service import BookService
@@ -75,6 +77,21 @@ async def update_book(
     service = BookService(session)
     book = await service.update_book(book_id=book_id, user_id=current_user.id, data=request_data)
     return BookResponse.model_validate(book)
+
+
+@router.patch("/{book_id}/progress", response_model=ProgressUpdateResponse)
+async def update_reading_progress(
+    book_id: UUID,
+    request_data: ProgressUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ProgressUpdateResponse:
+    service = BookService(session)
+    return await service.update_reading_progress(
+        book_id=book_id,
+        user_id=current_user.id,
+        current_page=request_data.current_page,
+    )
 
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)

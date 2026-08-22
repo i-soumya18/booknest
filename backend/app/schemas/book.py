@@ -68,6 +68,21 @@ class BookResponse(BaseModel):
     finished_at: datetime | None = None
 
 
+class ProgressUpdateRequest(BaseModel):
+    current_page: int = Field(..., ge=0)
+
+
+class ProgressUpdateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    current_page: int
+    total_pages: int
+    progress_percentage: int
+    status: BookStatusEnum
+    finished_at: datetime | None = None
+
+
 T = TypeVar("T")
 
 

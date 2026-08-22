@@ -1,14 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { Book } from "@/types";
+import { fetchApi } from "@/lib/api/client";
 
 interface BookCardProps {
   book: Book;
   onEdit: (book: Book) => void;
   onDelete: (bookId: string) => void;
+  onProgressUpdated?: () => void;
 }
 
-export function BookCard({ book, onEdit, onDelete }: BookCardProps) {
+export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCardProps) {
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
+  const [pageInput, setPageInput] = useState<number>(book.currentPage);
+  const [progressError, setProgressError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const progressPercent = Math.min(
     100,
     Math.round((book.currentPage / (book.totalPages || 1)) * 100)
@@ -23,6 +31,34 @@ export function BookCard({ book, onEdit, onDelete }: BookCardProps) {
       case "WANT_TO_READ":
       default:
         return "#f59e0b"; // amber
+    }
+  };
+
+  const handleUpdateProgress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProgressError(null);
+
+    if (pageInput < 0) {
+      setProgressError("Page cannot be negative.");
+      return;
+    }
+    if (pageInput > book.totalPages) {
+      setProgressError("Page cannot exceed total pages.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await fetchApi(`/api/v1/books/${book.id}/progress`, {
+        method: "PATCH",
+        body: JSON.stringify({ current_page: Number(pageInput) }),
+      });
+      setIsEditingProgress(false);
+      if (onProgressUpdated) onProgressUpdated();
+    } catch (err) {
+      setProgressError(err instanceof Error ? err.message : "Failed to update progress.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,23 +97,46 @@ export function BookCard({ book, onEdit, onDelete }: BookCardProps) {
         </span>
       </div>
 
-      {/* Progress Bar */}
+      {/* Progress Bar & Quick Updater */}
       <div>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-
+            alignItems: "center",
             fontSize: "0.85rem",
             color: "var(--text-secondary)",
             marginBottom: "0.25rem",
           }}
         >
           <span>Progress</span>
-          <span>
-            {book.currentPage} / {book.totalPages} pages ({progressPercent}%)
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <span>
+              {book.currentPage} / {book.totalPages} pages ({progressPercent}%)
+            </span>
+            {!isEditingProgress && (
+              <button
+                onClick={() => {
+                  setPageInput(book.currentPage);
+                  setProgressError(null);
+                  setIsEditingProgress(true);
+                }}
+                title="Update Page Progress"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--accent-color)",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  padding: "0 0.2rem",
+                }}
+              >
+                ✏️
+              </button>
+            )}
+          </div>
         </div>
+
         <div
           style={{
             width: "100%",
@@ -85,6 +144,7 @@ export function BookCard({ book, onEdit, onDelete }: BookCardProps) {
             background: "var(--bg-card)",
             borderRadius: "3px",
             overflow: "hidden",
+            marginBottom: "0.5rem",
           }}
         >
           <div
@@ -96,6 +156,91 @@ export function BookCard({ book, onEdit, onDelete }: BookCardProps) {
             }}
           />
         </div>
+
+        {/* Inline Reading Progress Editor Form */}
+        {isEditingProgress && (
+          <form
+            onSubmit={handleUpdateProgress}
+            style={{
+              marginTop: "0.5rem",
+              padding: "0.5rem",
+              background: "var(--bg-primary)",
+              borderRadius: "6px",
+              border: "1px solid var(--border-color)",
+            }}
+          >
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <label style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Page:</label>
+              <input
+                type="number"
+                min="0"
+                max={book.totalPages}
+                value={pageInput}
+                onChange={(e) => {
+                  setPageInput(Number(e.target.value));
+                  setProgressError(null);
+                }}
+                style={{
+                  width: "80px",
+                  padding: "0.25rem 0.4rem",
+                  borderRadius: "4px",
+                  border: "1px solid var(--border-color)",
+                  background: "var(--bg-surface)",
+                  color: "var(--text-primary)",
+                  fontSize: "0.85rem",
+                }}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: "0.25rem 0.6rem",
+                  fontSize: "0.8rem",
+                  borderRadius: "4px",
+                  background: "var(--accent-color)",
+                  color: "#fff",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditingProgress(false);
+                  setProgressError(null);
+                }}
+                style={{
+                  padding: "0.25rem 0.5rem",
+                  fontSize: "0.8rem",
+                  borderRadius: "4px",
+                  background: "transparent",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border-color)",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Inline Error Message */}
+            {progressError && (
+              <div
+                style={{
+                  color: "var(--error-color)",
+                  fontSize: "0.8rem",
+                  marginTop: "0.4rem",
+                  fontWeight: 500,
+                }}
+              >
+                {progressError}
+              </div>
+            )}
+          </form>
+        )}
       </div>
 
       {/* Rating & Notes */}
@@ -117,7 +262,6 @@ export function BookCard({ book, onEdit, onDelete }: BookCardProps) {
         >
           &quot;{book.notes}&quot;
         </p>
-
       )}
 
       {/* Action Buttons */}

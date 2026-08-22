@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
@@ -32,7 +33,6 @@ class BookRepository:
         sort_by: BookSortByEnum = BookSortByEnum.CREATED_AT,
         sort_order: SortOrderEnum = SortOrderEnum.DESC,
     ) -> tuple[list[Book], int]:
-        # Base filter statement
         stmt = select(Book).where(Book.owner_id == owner_id)
 
         if status is not None:
@@ -42,12 +42,10 @@ class BookRepository:
             term = f"%{search.strip()}%"
             stmt = stmt.where(or_(Book.title.ilike(term), Book.author.ilike(term)))
 
-        # Count total matching rows via subquery count
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total_result = await self.session.execute(count_stmt)
         total_count = total_result.scalar_one() or 0
 
-        # Map sort column
         if sort_by == BookSortByEnum.TITLE:
             sort_column = Book.title
         elif sort_by == BookSortByEnum.RATING:
@@ -58,7 +56,6 @@ class BookRepository:
         order_clause = sort_column.desc() if sort_order == SortOrderEnum.DESC else sort_column.asc()
         stmt = stmt.order_by(order_clause, Book.id.desc())
 
-        # PostgreSQL offset/limit pagination
         offset_val = (page - 1) * page_size
         stmt = stmt.offset(offset_val).limit(page_size)
 
@@ -90,6 +87,15 @@ class BookRepository:
                 setattr(book, key, value.strip())
             else:
                 setattr(book, key, value)
+        await self.session.flush()
+        return book
+
+    async def update_progress(
+        self, book: Book, current_page: int, status: str, finished_at: datetime | None
+    ) -> Book:
+        book.current_page = current_page
+        book.status = status
+        book.finished_at = finished_at
         await self.session.flush()
         return book
 

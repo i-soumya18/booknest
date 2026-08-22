@@ -296,7 +296,9 @@ export function BookList() {
                   setIsFormOpen(true);
                 }}
                 onDelete={handleDelete}
+                onProgressUpdated={loadBooks}
               />
+
             ))}
           </div>
 
