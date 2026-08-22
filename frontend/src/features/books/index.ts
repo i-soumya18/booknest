@@ -1,2 +1,3 @@
-// Books domain feature module (Phase 3)
-export {};
+export { BookList } from "./components/BookList";
+export { BookCard } from "./components/BookCard";
+export { BookForm } from "./components/BookForm";
