@@ -98,9 +98,11 @@ booknest/
 **Phase: 3 — Book domain (CRUD). ✅ Complete.**
 **Phase: 4 — Filtering / search / pagination / sorting. ✅ Complete.**
 **Phase: 5 — Shelves + many-to-many. ✅ Complete.**
-**Phase: 6 — Shelf RBAC. 🟢 Active.**
+**Phase: 6 — Shelf RBAC. ✅ Complete.**
+**Phase: 7 — Reading progress. 🟢 Active.**
 
-Shelf CRUD REST endpoints (`POST`, `GET`, `PUT`, `DELETE /api/v1/shelves`), `shelf_books` junction table association endpoints (`POST`, `DELETE /api/v1/shelves/{shelf_id}/books/{book_id}`), `ShelfService` double ownership validation, transactional shelf deletion keeping books untouched, and frontend shelf library components (`ShelfCard`, `ShelfForm`, `ShelfList`, `ShelfDetail`, `/shelves` & `/shelves/[id]` pages) are fully implemented and verified with 19/19 unit & integration tests passing cleanly.
+Role-Based Access Control (RBAC) supporting `OWNER`, `EDITOR`, and `VIEWER` roles, collaborator sharing by email (`POST /shelves/{id}/collaborators`), role modification (`PUT`), collaborator removal (`DELETE`), "Shared with me" view (`GET /shelves/shared-with-me`), strict 403 Forbidden enforcement on unauthorized mutations (curl-verifiable server-side security), and frontend RBAC management controls are fully implemented and verified with 20/20 unit & integration tests passing cleanly.
+
 
 
 

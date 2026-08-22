@@ -17,10 +17,10 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 | 3 | Book domain (CRUD) | ✅ **Complete** |
 | 4 | Filtering / search / pagination / sorting | ✅ **Complete** |
 | 5 | Shelves + many-to-many | ✅ **Complete** |
-| 6 | Shelf RBAC | 🟢 **Active** |
+| 6 | Shelf RBAC | ✅ **Complete** |
 
+| 7 | Reading progress | 🟢 **Active** |
 
-| 7 | Reading progress | ⛔ Blocked on Phase 3 |
 | 8 | Lending | ⛔ Blocked on Phases 2, 3 |
 | 9 | Activity events | ⛔ Blocked on Phases 5, 6, 7, 8 |
 | 10 | WebSocket authentication | ⛔ Blocked on Phase 2 |
@@ -368,11 +368,12 @@ Shelf CRUD, shelf↔book association endpoints, transactional shelf deletion.
 
 ---
 
-<details open>
-<summary><strong>PHASE 6 — Shelf RBAC 🟢 Active</strong></summary>
+<details>
+<summary><strong>PHASE 6 — Shelf RBAC ✅ Complete</strong></summary>
+
 
 ### Status
-🟢 Active. Shelves and shelf_books relationship ready. Ready for OWNER/EDITOR/VIEWER role-based access control.
+Complete. Reusable RBAC authorization check, OWNER/EDITOR/VIEWER role matrix enforcement, collaborator endpoints, Shared with Me view, and 403 unit tests complete.
 
 ### Mandatory reading
 - §3 Shelf RBAC — full OWNER/EDITOR/VIEWER capability matrix, and the critical rule: "Never
@@ -401,13 +402,13 @@ Shelf CRUD, shelf↔book association endpoints, transactional shelf deletion.
   editor attempting any of these gets a clear, explicit error, not a silent no-op. (PDF item 14)
 
 ### Completion criteria (from PDF items 12–16 + `AGENTS.md` §47)
-- [ ] Owner can share a shelf by email, assigning editor or viewer role
-- [ ] Editor can add/remove books, cannot share/change roles/remove collaborators/delete shelf
-- [ ] Viewer can view only; every mutating endpoint rejects them with 403
-- [ ] Direct unauthorized API calls (bypassing the UI) fail correctly — verify with curl, not
+- [x] Owner can share a shelf by email, assigning editor or viewer role
+- [x] Editor can add/remove books, cannot share/change roles/remove collaborators/delete shelf
+- [x] Viewer can view only; every mutating endpoint rejects them with 403
+- [x] Direct unauthorized API calls (bypassing the UI) fail correctly — verify with curl, not
       just through the frontend
-- [ ] "Shared with me" endpoint lists shelves shared with the current user plus their role
-- [ ] Removing a collaborator (or deleting the shelf) leaves no orphaned share records and
+- [x] "Shared with me" endpoint lists shelves shared with the current user plus their role
+- [x] Removing a collaborator (or deleting the shelf) leaves no orphaned share records and
       never deletes the underlying books
 
 ### Stop and ask if...
@@ -422,11 +423,11 @@ Role-based authorization dependency, shelf sharing endpoints, "Shared with me" v
 
 ---
 
-<details>
-<summary><strong>PHASE 7 — Reading progress ⛔ Blocked on Phase 3</strong></summary>
+<details open>
+<summary><strong>PHASE 7 — Reading progress 🟢 Active</strong></summary>
 
 ### Status
-Blocked until book CRUD exists. (Independent of shelves/RBAC.)
+🟢 Active. Book domain ready. Ready for Reading Progress page updates, percentage calculation, and atomic auto-finish state machine.
 
 ### Mandatory reading
 - §6 Reading Progress — validation rules (`current_page >= 0`, `current_page <= total_pages`,
