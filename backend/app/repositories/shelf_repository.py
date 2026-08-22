@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.book import Book
 from app.models.shelf import Shelf, ShelfBook, ShelfCollaborator
-from app.schemas.shelf import ShelfCreateRequest, ShelfUpdateRequest
+from app.models.user import User
+from app.schemas.shelf import ShelfCreateRequest, ShelfRoleEnum, ShelfUpdateRequest
 
 
 class ShelfRepository:
@@ -82,3 +83,60 @@ class ShelfRepository:
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    # --- Collaborator & RBAC Methods ---
+
+    async def get_collaborator(self, shelf_id: UUID, user_id: UUID) -> ShelfCollaborator | None:
+        stmt = select(ShelfCollaborator).where(
+            ShelfCollaborator.shelf_id == shelf_id,
+            ShelfCollaborator.user_id == user_id,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_shared_shelves_for_user(self, user_id: UUID) -> list[tuple[Shelf, ShelfRoleEnum]]:
+        stmt = (
+            select(Shelf, ShelfCollaborator.role)
+            .join(ShelfCollaborator, Shelf.id == ShelfCollaborator.shelf_id)
+            .where(ShelfCollaborator.user_id == user_id)
+            .order_by(ShelfCollaborator.added_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return [(shelf, ShelfRoleEnum(role)) for shelf, role in result.all()]
+
+    async def get_collaborators_for_shelf(
+        self, shelf_id: UUID
+    ) -> list[tuple[User, ShelfCollaborator]]:
+        stmt = (
+            select(User, ShelfCollaborator)
+            .join(ShelfCollaborator, User.id == ShelfCollaborator.user_id)
+            .where(ShelfCollaborator.shelf_id == shelf_id)
+            .order_by(ShelfCollaborator.added_at.asc())
+        )
+        result = await self.session.execute(stmt)
+        return list(result.all())
+
+    async def add_collaborator(
+        self, shelf_id: UUID, user_id: UUID, role: ShelfRoleEnum
+    ) -> ShelfCollaborator:
+        collaborator = ShelfCollaborator(shelf_id=shelf_id, user_id=user_id, role=role.value)
+        self.session.add(collaborator)
+        await self.session.flush()
+        return collaborator
+
+    async def update_collaborator_role(
+        self, shelf_id: UUID, user_id: UUID, role: ShelfRoleEnum
+    ) -> ShelfCollaborator:
+        collaborator = await self.get_collaborator(shelf_id, user_id)
+        if collaborator:
+            collaborator.role = role.value
+            await self.session.flush()
+        return collaborator
+
+    async def remove_collaborator(self, shelf_id: UUID, user_id: UUID) -> None:
+        stmt = delete(ShelfCollaborator).where(
+            ShelfCollaborator.shelf_id == shelf_id,
+            ShelfCollaborator.user_id == user_id,
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()

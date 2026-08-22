@@ -1,9 +1,16 @@
 from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.book import BookResponse
+
+
+class ShelfRoleEnum(StrEnum):
+    OWNER = "OWNER"
+    EDITOR = "EDITOR"
+    VIEWER = "VIEWER"
 
 
 class ShelfCreateRequest(BaseModel):
@@ -25,7 +32,27 @@ class ShelfResponse(BaseModel):
     description: str | None = None
     created_at: datetime
     updated_at: datetime
+    user_role: ShelfRoleEnum = ShelfRoleEnum.OWNER
 
 
 class ShelfDetailResponse(ShelfResponse):
     books: list[BookResponse] = Field(default_factory=list)
+
+
+class CollaboratorCreateRequest(BaseModel):
+    email: EmailStr
+    role: ShelfRoleEnum = Field(default=ShelfRoleEnum.VIEWER)
+
+
+class CollaboratorUpdateRequest(BaseModel):
+    role: ShelfRoleEnum
+
+
+class CollaboratorResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: UUID
+    email: str
+    name: str
+    role: ShelfRoleEnum
+    created_at: datetime

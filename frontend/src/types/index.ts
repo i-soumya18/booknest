@@ -45,8 +45,17 @@ export interface Shelf {
   description?: string | null;
   createdAt: string;
   updatedAt: string;
+  userRole?: ShelfRole;
 }
 
 export interface ShelfDetail extends Shelf {
   books: Book[];
+}
+
+export interface Collaborator {
+  userId: string;
+  email: string;
+  name: string;
+  role: ShelfRole;
+  createdAt: string;
 }

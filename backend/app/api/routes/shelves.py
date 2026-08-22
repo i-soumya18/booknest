@@ -7,6 +7,9 @@ from app.api.dependencies import get_current_user
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.shelf import (
+    CollaboratorCreateRequest,
+    CollaboratorResponse,
+    CollaboratorUpdateRequest,
     ShelfCreateRequest,
     ShelfDetailResponse,
     ShelfResponse,
@@ -34,6 +37,15 @@ async def list_shelves(
 ) -> list[ShelfResponse]:
     service = ShelfService(session)
     return await service.list_user_shelves(user_id=current_user.id)
+
+
+@router.get("/shared-with-me", response_model=list[ShelfResponse])
+async def list_shared_shelves(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[ShelfResponse]:
+    service = ShelfService(session)
+    return await service.list_shared_shelves(user_id=current_user.id)
 
 
 @router.get("/{shelf_id}", response_model=ShelfDetailResponse)
@@ -95,4 +107,78 @@ async def remove_book_from_shelf(
     service = ShelfService(session)
     await service.remove_book_from_shelf(
         shelf_id=shelf_id, book_id=book_id, user_id=current_user.id
+    )
+
+
+# --- Collaborator Endpoints ---
+
+
+@router.post(
+    "/{shelf_id}/collaborators",
+    response_model=CollaboratorResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_collaborator(
+    shelf_id: UUID,
+    request_data: CollaboratorCreateRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> CollaboratorResponse:
+    service = ShelfService(session)
+    return await service.add_collaborator_by_email(
+        shelf_id=shelf_id,
+        owner_id=current_user.id,
+        email=request_data.email,
+        role=request_data.role,
+    )
+
+
+@router.get(
+    "/{shelf_id}/collaborators",
+    response_model=list[CollaboratorResponse],
+)
+async def list_collaborators(
+    shelf_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[CollaboratorResponse]:
+    service = ShelfService(session)
+    return await service.list_collaborators(shelf_id=shelf_id, current_user_id=current_user.id)
+
+
+@router.put(
+    "/{shelf_id}/collaborators/{target_user_id}",
+    response_model=CollaboratorResponse,
+)
+async def update_collaborator_role(
+    shelf_id: UUID,
+    target_user_id: UUID,
+    request_data: CollaboratorUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> CollaboratorResponse:
+    service = ShelfService(session)
+    return await service.update_collaborator_role(
+        shelf_id=shelf_id,
+        owner_id=current_user.id,
+        target_user_id=target_user_id,
+        new_role=request_data.role,
+    )
+
+
+@router.delete(
+    "/{shelf_id}/collaborators/{target_user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def remove_collaborator(
+    shelf_id: UUID,
+    target_user_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    service = ShelfService(session)
+    await service.remove_collaborator(
+        shelf_id=shelf_id,
+        current_user_id=current_user.id,
+        target_user_id=target_user_id,
     )

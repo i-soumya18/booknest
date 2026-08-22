@@ -6,8 +6,11 @@ import { fetchApi } from "@/lib/api/client";
 import { ShelfCard } from "./ShelfCard";
 import { ShelfForm, ShelfFormData } from "./ShelfForm";
 
+type FilterTab = "all" | "shared";
+
 export function ShelfList() {
   const [shelves, setShelves] = useState<Shelf[]>([]);
+  const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -17,14 +20,15 @@ export function ShelfList() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchApi<Shelf[]>("/api/v1/shelves");
+      const endpoint = activeTab === "shared" ? "/api/v1/shelves/shared-with-me" : "/api/v1/shelves";
+      const data = await fetchApi<Shelf[]>(endpoint);
       setShelves(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load shelves.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     loadShelves();
@@ -72,7 +76,7 @@ export function ShelfList() {
         <div>
           <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>My Shelves</h2>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Organize your books into custom collections.
+            Organize your books into custom collections and shared team shelves.
           </p>
         </div>
         <button
@@ -95,10 +99,53 @@ export function ShelfList() {
         </button>
       </div>
 
+      {/* Filter Tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.5rem",
+          marginBottom: "1.5rem",
+          borderBottom: "1px solid var(--border-color)",
+          paddingBottom: "0.5rem",
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("all")}
+          style={{
+            padding: "0.5rem 1rem",
+            border: "none",
+            background: activeTab === "all" ? "var(--accent-color)" : "transparent",
+            color: activeTab === "all" ? "#fff" : "var(--text-secondary)",
+            borderRadius: "4px",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.9rem",
+          }}
+        >
+          All Shelves
+        </button>
+
+        <button
+          onClick={() => setActiveTab("shared")}
+          style={{
+            padding: "0.5rem 1rem",
+            border: "none",
+            background: activeTab === "shared" ? "var(--accent-color)" : "transparent",
+            color: activeTab === "shared" ? "#fff" : "var(--text-secondary)",
+            borderRadius: "4px",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontSize: "0.9rem",
+          }}
+        >
+          Shared With Me
+        </button>
+      </div>
+
       {/* Loading State */}
       {loading && (
         <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-secondary)" }}>
-          Loading your shelves...
+          Loading shelves...
         </div>
       )}
 
@@ -145,28 +192,32 @@ export function ShelfList() {
           }}
         >
           <p style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem" }}>
-            No custom shelves created yet.
+            {activeTab === "shared" ? "No shelves shared with you yet." : "No custom shelves created yet."}
           </p>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-            Create shelves to categorize your reading library (e.g. Sci-Fi, Favorites, To Buy).
+            {activeTab === "shared"
+              ? "When someone shares a shelf with you, it will appear here."
+              : "Create shelves to categorize your reading library (e.g. Sci-Fi, Favorites, To Buy)."}
           </p>
-          <button
-            onClick={() => {
-              setEditingShelf(null);
-              setIsFormOpen(true);
-            }}
-            style={{
-              padding: "0.6rem 1.2rem",
-              background: "var(--accent-color)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            + Create First Shelf
-          </button>
+          {activeTab === "all" && (
+            <button
+              onClick={() => {
+                setEditingShelf(null);
+                setIsFormOpen(true);
+              }}
+              style={{
+                padding: "0.6rem 1.2rem",
+                background: "var(--accent-color)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              + Create First Shelf
+            </button>
+          )}
         </div>
       )}
 
