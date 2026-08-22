@@ -1,10 +1,16 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.book import Book
-from app.schemas.book import BookCreateRequest, BookUpdateRequest
+from app.schemas.book import (
+    BookCreateRequest,
+    BookSortByEnum,
+    BookStatusEnum,
+    BookUpdateRequest,
+    SortOrderEnum,
+)
 
 
 class BookRepository:
@@ -16,10 +22,49 @@ class BookRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_owner(self, owner_id: UUID) -> list[Book]:
-        stmt = select(Book).where(Book.owner_id == owner_id).order_by(Book.created_at.desc())
+    async def get_paginated_by_owner(
+        self,
+        owner_id: UUID,
+        page: int = 1,
+        page_size: int = 20,
+        search: str | None = None,
+        status: BookStatusEnum | None = None,
+        sort_by: BookSortByEnum = BookSortByEnum.CREATED_AT,
+        sort_order: SortOrderEnum = SortOrderEnum.DESC,
+    ) -> tuple[list[Book], int]:
+        # Base filter statement
+        stmt = select(Book).where(Book.owner_id == owner_id)
+
+        if status is not None:
+            stmt = stmt.where(Book.status == status.value)
+
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            stmt = stmt.where(or_(Book.title.ilike(term), Book.author.ilike(term)))
+
+        # Count total matching rows via subquery count
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total_result = await self.session.execute(count_stmt)
+        total_count = total_result.scalar_one() or 0
+
+        # Map sort column
+        if sort_by == BookSortByEnum.TITLE:
+            sort_column = Book.title
+        elif sort_by == BookSortByEnum.RATING:
+            sort_column = Book.rating
+        else:
+            sort_column = Book.created_at
+
+        order_clause = sort_column.desc() if sort_order == SortOrderEnum.DESC else sort_column.asc()
+        stmt = stmt.order_by(order_clause, Book.id.desc())
+
+        # PostgreSQL offset/limit pagination
+        offset_val = (page - 1) * page_size
+        stmt = stmt.offset(offset_val).limit(page_size)
+
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        items = list(result.scalars().all())
+        return items, total_count
 
     async def create_book(self, owner_id: UUID, data: BookCreateRequest) -> Book:
         book = Book(

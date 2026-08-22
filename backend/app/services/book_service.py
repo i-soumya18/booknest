@@ -1,3 +1,4 @@
+import math
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -5,7 +6,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.book import Book
 from app.repositories.book_repository import BookRepository
-from app.schemas.book import BookCreateRequest, BookUpdateRequest
+from app.schemas.book import (
+    BookCreateRequest,
+    BookResponse,
+    BookSortByEnum,
+    BookStatusEnum,
+    BookUpdateRequest,
+    PaginatedResponse,
+    SortOrderEnum,
+)
 
 
 class BookService:
@@ -40,8 +49,36 @@ class BookService:
     async def get_book(self, book_id: UUID, user_id: UUID) -> Book:
         return await self._get_and_ensure_owner(book_id=book_id, user_id=user_id)
 
-    async def list_user_books(self, user_id: UUID) -> list[Book]:
-        return await self.book_repo.get_by_owner(owner_id=user_id)
+    async def list_user_books(
+        self,
+        user_id: UUID,
+        page: int = 1,
+        page_size: int = 20,
+        search: str | None = None,
+        status: BookStatusEnum | None = None,
+        sort_by: BookSortByEnum = BookSortByEnum.CREATED_AT,
+        sort_order: SortOrderEnum = SortOrderEnum.DESC,
+    ) -> PaginatedResponse[BookResponse]:
+        items, total = await self.book_repo.get_paginated_by_owner(
+            owner_id=user_id,
+            page=page,
+            page_size=page_size,
+            search=search,
+            status=status,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+
+        total_pages = math.ceil(total / page_size) if total > 0 else 0
+        book_responses = [BookResponse.model_validate(b) for b in items]
+
+        return PaginatedResponse[BookResponse](
+            items=book_responses,
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=total_pages,
+        )
 
     async def update_book(self, book_id: UUID, user_id: UUID, data: BookUpdateRequest) -> Book:
         book = await self._get_and_ensure_owner(book_id=book_id, user_id=user_id)

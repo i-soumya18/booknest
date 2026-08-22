@@ -65,15 +65,93 @@ def test_list_books_isolation(client):
 
     list_a = client.get("/api/v1/books", headers=headers_a)
     assert list_a.status_code == 200
-    items_a = list_a.json()
-    assert len(items_a) == 1
-    assert items_a[0]["title"] == "User A Book"
+    res_a = list_a.json()
+    assert res_a["total"] == 1
+    assert res_a["items"][0]["title"] == "User A Book"
 
     list_b = client.get("/api/v1/books", headers=headers_b)
     assert list_b.status_code == 200
-    items_b = list_b.json()
-    assert len(items_b) == 1
-    assert items_b[0]["title"] == "User B Book"
+    res_b = list_b.json()
+    assert res_b["total"] == 1
+    assert res_b["items"][0]["title"] == "User B Book"
+
+
+def test_pagination_filter_search_sort(client):
+    headers, _ = _create_user_and_login(client, "searchuser@example.com", "Search User")
+
+    # Create 5 books
+    books_data = [
+        {
+            "title": "Clean Code",
+            "author": "Robert Martin",
+            "status": "READING",
+            "rating": 5,
+            "total_pages": 400,
+        },
+        {
+            "title": "Design Patterns",
+            "author": "Erich Gamma",
+            "status": "READING",
+            "rating": 4,
+            "total_pages": 350,
+        },
+        {
+            "title": "Refactoring",
+            "author": "Martin Fowler",
+            "status": "FINISHED",
+            "rating": 5,
+            "total_pages": 450,
+        },
+        {
+            "title": "The Pragmatic Programmer",
+            "author": "Andrew Hunt",
+            "status": "FINISHED",
+            "rating": 5,
+            "total_pages": 320,
+        },
+        {
+            "title": "Domain-Driven Design",
+            "author": "Eric Evans",
+            "status": "WANT_TO_READ",
+            "rating": 3,
+            "total_pages": 500,
+        },
+    ]
+
+    for b in books_data:
+        client.post("/api/v1/books", headers=headers, json=b)
+
+    # 1. Test pagination
+    pag1 = client.get("/api/v1/books?page=1&page_size=2", headers=headers).json()
+    assert pag1["page"] == 1
+    assert pag1["page_size"] == 2
+    assert pag1["total"] == 5
+    assert pag1["total_pages"] == 3
+    assert len(pag1["items"]) == 2
+
+    pag2 = client.get("/api/v1/books?page=2&page_size=2", headers=headers).json()
+    assert pag2["page"] == 2
+    assert len(pag2["items"]) == 2
+
+    # 2. Test status filter alone
+    reading_resp = client.get("/api/v1/books?status=READING", headers=headers).json()
+    assert reading_resp["total"] == 2
+    assert all(b["status"] == "READING" for b in reading_resp["items"])
+
+    # 3. Test search alone (title or author)
+    search_resp = client.get("/api/v1/books?search=Martin", headers=headers).json()
+    # Martin Fowler (author) and Clean Code (author Robert Martin)
+    assert search_resp["total"] == 2
+
+    # 4. Test combined status filter AND search
+    combined_resp = client.get("/api/v1/books?status=READING&search=Martin", headers=headers).json()
+    assert combined_resp["total"] == 1
+    assert combined_resp["items"][0]["title"] == "Clean Code"
+
+    # 5. Test sorting by title ascending
+    sort_title = client.get("/api/v1/books?sort_by=title&sort_order=asc", headers=headers).json()
+    titles = [b["title"] for b in sort_title["items"]]
+    assert titles == sorted(titles)
 
 
 def test_cross_user_access_blocked(client):

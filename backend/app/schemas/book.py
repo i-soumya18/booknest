@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Generic, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -9,6 +10,17 @@ class BookStatusEnum(StrEnum):
     WANT_TO_READ = "WANT_TO_READ"
     READING = "READING"
     FINISHED = "FINISHED"
+
+
+class BookSortByEnum(StrEnum):
+    CREATED_AT = "created_at"
+    TITLE = "title"
+    RATING = "rating"
+
+
+class SortOrderEnum(StrEnum):
+    ASC = "asc"
+    DESC = "desc"
 
 
 class BookCreateRequest(BaseModel):
@@ -54,3 +66,14 @@ class BookResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     finished_at: datetime | None = None
+
+
+T = TypeVar("T")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int

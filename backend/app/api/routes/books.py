@@ -1,12 +1,20 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
 from app.db.session import get_db_session
 from app.models.user import User
-from app.schemas.book import BookCreateRequest, BookResponse, BookUpdateRequest
+from app.schemas.book import (
+    BookCreateRequest,
+    BookResponse,
+    BookSortByEnum,
+    BookStatusEnum,
+    BookUpdateRequest,
+    PaginatedResponse,
+    SortOrderEnum,
+)
 from app.services.book_service import BookService
 
 router = APIRouter(prefix="/books", tags=["Books"])
@@ -23,14 +31,27 @@ async def create_book(
     return BookResponse.model_validate(book)
 
 
-@router.get("", response_model=list[BookResponse])
+@router.get("", response_model=PaginatedResponse[BookResponse])
 async def list_books(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    book_status: BookStatusEnum | None = Query(default=None, alias="status"),
+    sort_by: BookSortByEnum = Query(default=BookSortByEnum.CREATED_AT),
+    sort_order: SortOrderEnum = Query(default=SortOrderEnum.DESC),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session),
-) -> list[BookResponse]:
+) -> PaginatedResponse[BookResponse]:
     service = BookService(session)
-    books = await service.list_user_books(user_id=current_user.id)
-    return [BookResponse.model_validate(b) for b in books]
+    return await service.list_user_books(
+        user_id=current_user.id,
+        page=page,
+        page_size=page_size,
+        search=search,
+        status=book_status,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
 
 
 @router.get("/{book_id}", response_model=BookResponse)

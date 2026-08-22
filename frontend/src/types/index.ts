@@ -1,6 +1,8 @@
 // TypeScript interfaces for domain entities
 
 export type BookStatus = "WANT_TO_READ" | "READING" | "FINISHED";
+export type BookSortBy = "created_at" | "title" | "rating";
+export type SortOrder = "asc" | "desc";
 
 export interface Book {
   id: string;
@@ -15,6 +17,23 @@ export interface Book {
   createdAt: string;
   updatedAt: string;
   finishedAt?: string | null;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface BookQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: BookStatus | "";
+  sortBy?: BookSortBy;
+  sortOrder?: SortOrder;
 }
 
 export type ShelfRole = "OWNER" | "EDITOR" | "VIEWER";
