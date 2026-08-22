@@ -92,11 +92,11 @@ booknest/
 
 ## 4. Current Status
 
-**Phase: 0 — Repository + architecture + tooling. Not started.**
+**Phase: 0 — Repository + architecture + tooling. ✅ Complete.**
+**Phase: 1 — Database schema + migrations. 🟢 Active.**
 
-No code has been written yet. This is a fresh, greenfield project. All planning artifacts
-(constitution, 15 architecture/sequence/ER/state-machine diagrams, this file, and
-`PHASE_PROMPTS.md`) exist; implementation has not begun.
+Backend FastAPI scaffold and Next.js App Router frontend scaffold are fully initialized, typed, and tested. Environment variables template (.env.example), Ruff linter/formatter config, ESLint config, and Alembic database migration environment are in place with zero lint errors and clean test runs.
+
 
 > Maintenance note: update the line above every time a phase starts, completes, or gets
 > blocked. Keep the "Current Status" blocks in `PHASE_PROMPTS.md` in sync with this line —

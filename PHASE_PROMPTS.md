@@ -15,8 +15,8 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Repository + architecture + tooling | 🟢 **Active** |
-| 1 | Database schema + migrations | ⛔ Blocked on Phase 0 |
+| 0 | Repository + architecture + tooling | ✅ **Complete** |
+| 1 | Database schema + migrations | 🟢 **Active** |
 | 2 | Authentication + JWT + refresh rotation | ⛔ Blocked on Phase 1 |
 | 3 | Book domain (CRUD) | ⛔ Blocked on Phase 2 |
 | 4 | Filtering / search / pagination / sorting | ⛔ Blocked on Phase 3 |
@@ -43,11 +43,11 @@ polish early (§52 closing line).
 
 ---
 
-<details open>
-<summary><strong>PHASE 0 — Repository + architecture + tooling 🟢 Active</strong></summary>
+<details>
+<summary><strong>PHASE 0 — Repository + architecture + tooling ✅ Complete</strong></summary>
 
 ### Status
-Not started. This is the first phase. Nothing is blocking it.
+Complete. Scaffold, tooling, env setup, initial commits, and planning documents complete.
 
 ### Mandatory reading (read these `AGENTS.md` sections in full before doing anything)
 - §11 Architecture — the logical layering (Client → REST API/WebSocket → Application →
@@ -79,12 +79,12 @@ Before scaffolding, produce (in a scratch note or PR description, not necessaril
 - Every commit should represent one coherent engineering change, not a giant dump. (§38)
 
 ### Completion criteria (from `AGENTS.md` §52 Phase 0 scope + §39/§41)
-- [ ] Backend and frontend scaffolds exist and boot (even with placeholder routes/pages)
-- [ ] Folder structure matches the layered architecture in §11–§12 and §24
-- [ ] Linting/formatting configured for both sides
-- [ ] `.env.example` exists with placeholders for every config value you already know you'll need
-- [ ] Git repo initialized with a real commit history starting now (§38) — no monolithic first commit
-- [ ] `AGENTS.md`, `CLAUDE.md`, `PHASE_PROMPTS.md` are committed at the repo root
+- [x] Backend and frontend scaffolds exist and boot (even with placeholder routes/pages)
+- [x] Folder structure matches the layered architecture in §11–§12 and §24
+- [x] Linting/formatting configured for both sides
+- [x] `.env.example` exists with placeholders for every config value you already know you'll need
+- [x] Git repo initialized with a real commit history starting now (§38) — no monolithic first commit
+- [x] `AGENTS.md`, `CLAUDE.md`, `PHASE_PROMPTS.md` are committed at the repo root
 
 ### Stop and ask if...
 - You're tempted to add a dependency that doesn't have a one-line justification you could
@@ -102,11 +102,11 @@ initial commit history, this repo's three planning docs committed.
 
 ---
 
-<details>
-<summary><strong>PHASE 1 — Database schema + migrations ⛔ Blocked on Phase 0</strong></summary>
+<details open>
+<summary><strong>PHASE 1 — Database schema + migrations 🟢 Active</strong></summary>
 
 ### Status
-Blocked until Phase 0's scaffold and migration tooling decision exist.
+🟢 Active. Phase 0 setup and migration tooling complete. Ready for schema implementation.
 
 ### Mandatory reading
 - §13 Database — the seven core entities and their relationships (User 1:N Book, User 1:N
