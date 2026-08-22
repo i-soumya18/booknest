@@ -15,9 +15,10 @@ everything it needs, provided `AGENTS.md` and the referenced diagrams are in the
 | 1 | Database schema + migrations | ✅ **Complete** |
 | 2 | Authentication + JWT + refresh rotation | ✅ **Complete** |
 | 3 | Book domain (CRUD) | ✅ **Complete** |
-| 4 | Filtering / search / pagination / sorting | 🟢 **Active** |
-| 5 | Shelves + many-to-many | ⛔ Blocked on Phase 2 |
+| 4 | Filtering / search / pagination / sorting | ✅ **Complete** |
+| 5 | Shelves + many-to-many | 🟢 **Active** |
 | 6 | Shelf RBAC | ⛔ Blocked on Phase 5 |
+
 | 7 | Reading progress | ⛔ Blocked on Phase 3 |
 | 8 | Lending | ⛔ Blocked on Phases 2, 3 |
 | 9 | Activity events | ⛔ Blocked on Phases 5, 6, 7, 8 |
@@ -268,11 +269,10 @@ per §25 (even if minimal — full polish is Phase 13).
 ---
 
 <details open>
-<summary><strong>PHASE 4 — Filtering / search / pagination / sorting 🟢 Active</strong></summary>
+<summary><strong>PHASE 4 — Filtering / search / pagination / sorting ✅ Complete</strong></summary>
 
 ### Status
-🟢 Active. Book CRUD endpoints ready. Ready for server-side pagination, search, filter, and sorting.
-
+Complete. Server-side PostgreSQL pagination, ILIKE search, status filter, combined AND query composition, multi-field sorting, and frontend filter bar & controls complete.
 
 ### Mandatory reading
 - §22 Pagination — query contract (`page`, `page_size`, `search`, `status`, `sort_by`,
@@ -296,12 +296,12 @@ per §25 (even if minimal — full polish is Phase 13).
 - Filter and search combine with AND, not OR. (§23)
 
 ### Completion criteria (from `AGENTS.md` §47 + PDF item 8–9)
-- [ ] Status filter works alone
-- [ ] Title/author search works alone
-- [ ] Status filter + search work together (AND, not OR)
-- [ ] Pagination is server-side (confirm via query plan or logging — not just "it looks right")
-- [ ] Sorting by rating, title, and date added all work
-- [ ] Response includes `items, page, page_size, total, total_pages`
+- [x] Status filter works alone
+- [x] Title/author search works alone
+- [x] Status filter + search work together (AND, not OR)
+- [x] Pagination is server-side (confirm via query plan or logging — not just "it looks right")
+- [x] Sorting by rating, title, and date added all work
+- [x] Response includes `items, page, page_size, total, total_pages`
 
 ### Stop and ask if...
 - You find yourself writing `.all()` (or equivalent full-table fetch) anywhere in this code
@@ -315,11 +315,6 @@ list view wired to send those params.
 
 ---
 
-<details>
-<summary><strong>PHASE 5 — Shelves + many-to-many ⛔ Blocked on Phase 2</strong></summary>
-
-### Status
-Blocked until authentication exists. (Does not depend on Phase 3/4, but is built after them
 per the sequential order in §52.)
 
 ### Mandatory reading

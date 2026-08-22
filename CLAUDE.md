@@ -96,9 +96,11 @@ booknest/
 **Phase: 1 — Database schema + migrations. ✅ Complete.**
 **Phase: 2 — Authentication + JWT + refresh rotation. ✅ Complete.**
 **Phase: 3 — Book domain (CRUD). ✅ Complete.**
-**Phase: 4 — Filtering / search / pagination / sorting. 🟢 Active.**
+**Phase: 4 — Filtering / search / pagination / sorting. ✅ Complete.**
+**Phase: 5 — Shelves + many-to-many. 🟢 Active.**
 
-Book domain REST API endpoints (`POST`, `GET`, `PUT`, `DELETE /api/v1/books`), `BookService` server-side ownership isolation (`book.owner_id == current_user.id`), `BookRepository`, Pydantic DTO validation (`total_pages >= 1`, `current_page <= total_pages`, `rating 1..5`), and frontend library components (`BookCard`, `BookForm`, `BookList`, `/books` route) are fully implemented and verified with 13/13 unit & integration tests passing cleanly.
+Server-side PostgreSQL pagination (`page`, `page_size`, `total`, `total_pages`), case-insensitive title/author ILIKE search, status filter (`WANT_TO_READ`, `READING`, `FINISHED`), combined AND filter+search composition, multi-field sorting (`created_at`, `title`, `rating`), and frontend filter bar & pagination UI are fully implemented and verified with 14/14 unit & integration tests passing cleanly.
+
 
 
 
