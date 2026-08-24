@@ -186,3 +186,49 @@ def test_book_lent_and_returned_emits_activity(client):
     b_types = [e["event_type"] for e in act_borrower["items"]]
     assert "BOOK_LENT" in b_types
     assert "BOOK_RETURNED" in b_types
+
+
+def test_activity_reverse_chronological_ordering_and_pagination(client):
+    """Verify that activity feed is strictly reverse-chronological and supports pagination."""
+    headers, _ = _create_user_and_login(client, "act_chrono@example.com", "Chrono User")
+
+    # Perform 4 distinct actions sequentially
+    b1_resp = client.post(
+        "/api/v1/books",
+        headers=headers,
+        json={"title": "Action 1 Book", "author": "Author", "total_pages": 100},
+    )
+    b1_id = b1_resp.json()["id"]
+
+    s1_resp = client.post("/api/v1/shelves", headers=headers, json={"name": "Action 2 Shelf"})
+    s1_id = s1_resp.json()["id"]
+
+    client.post(f"/api/v1/shelves/{s1_id}/books/{b1_id}", headers=headers)
+
+    client.patch(f"/api/v1/books/{b1_id}/progress", headers=headers, json={"current_page": 50})
+
+    # 1. Fetch entire activity feed
+    feed = client.get("/api/v1/activity?page=1&page_size=20", headers=headers).json()
+    assert feed["total"] >= 4
+    items = feed["items"]
+
+    # Verify timestamps are non-increasing (reverse-chronological)
+    timestamps = [item["created_at"] for item in items]
+    assert timestamps == sorted(timestamps, reverse=True)
+
+    # 2. Test pagination with page_size=2
+    p1 = client.get("/api/v1/activity?page=1&page_size=2", headers=headers).json()
+    assert p1["page"] == 1
+    assert p1["page_size"] == 2
+    assert len(p1["items"]) == 2
+
+    p2 = client.get("/api/v1/activity?page=2&page_size=2", headers=headers).json()
+    assert p2["page"] == 2
+    assert len(p2["items"]) == 2
+    # Distinct items between page 1 and page 2
+    p1_ids = {e["id"] for e in p1["items"]}
+    p2_ids = {e["id"] for e in p2["items"]}
+    assert p1_ids.isdisjoint(p2_ids)
+
+    # 3. Unauthenticated access rejected
+    assert client.get("/api/v1/activity").status_code == 401

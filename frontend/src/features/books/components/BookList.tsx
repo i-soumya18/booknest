@@ -84,20 +84,22 @@ export function BookList() {
   };
 
   return (
-    <div style={{ padding: "1.5rem 0" }}>
+    <div style={{ padding: "var(--space-6) 0" }}>
       {/* Header & Primary Action */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "1.5rem",
+          marginBottom: "var(--space-8)",
         }}
       >
         <div>
-          <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>My Book Library</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Manage and track your reading collection.
+          <h2 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
+            My Book Library
+          </h2>
+          <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
+            Manage, filter, and track your reading collection with server-side pagination.
           </p>
         </div>
         <button
@@ -106,14 +108,16 @@ export function BookList() {
             setIsFormOpen(true);
           }}
           style={{
-            padding: "0.6rem 1.2rem",
-            background: "var(--accent-color)",
-            color: "#fff",
+            padding: "var(--space-3) var(--space-6)",
+            background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
+            color: "#000000",
             border: "none",
-            borderRadius: "6px",
-            fontSize: "0.9rem",
-            fontWeight: 600,
+            borderRadius: "var(--radius-md)",
+            fontSize: "var(--font-size-2xl)",
+            fontWeight: 700,
             cursor: "pointer",
+            boxShadow: "var(--shadow-2)",
+            transition: "all var(--motion-fast)",
           }}
         >
           + Add Book
@@ -122,24 +126,22 @@ export function BookList() {
 
       {/* Filter, Search & Sorting Bar */}
       <div
+        className="design-card"
         style={{
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border-color)",
-          borderRadius: "8px",
-          padding: "1rem",
-          marginBottom: "1.5rem",
+          padding: "var(--space-5)",
+          marginBottom: "var(--space-8)",
           display: "flex",
           flexWrap: "wrap",
-          gap: "1rem",
+          gap: "var(--space-4)",
           alignItems: "center",
           justifyContent: "space-between",
         }}
       >
         {/* Search Input */}
-        <div style={{ flex: "1 1 250px" }}>
+        <div style={{ flex: "1 1 280px" }}>
           <input
             type="text"
-            placeholder="Search by title or author..."
+            placeholder="🔍 Search by title or author..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -147,18 +149,19 @@ export function BookList() {
             }}
             style={{
               width: "100%",
-              padding: "0.55rem 0.75rem",
-              borderRadius: "6px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-primary)",
-              color: "var(--text-primary)",
-              fontSize: "0.9rem",
+              padding: "var(--space-3) var(--space-4)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--color-border-default)",
+              background: "var(--color-surface-base)",
+              color: "var(--color-text-tertiary)",
+              fontSize: "var(--font-size-3xl)",
+              transition: "border-color var(--motion-fast)",
             }}
           />
         </div>
 
         {/* Filters and Sorting Controls */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", alignItems: "center" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
           {/* Status Filter */}
           <select
             value={statusFilter}
@@ -167,12 +170,13 @@ export function BookList() {
               setPage(1);
             }}
             style={{
-              padding: "0.55rem 0.75rem",
-              borderRadius: "6px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-primary)",
-              color: "var(--text-primary)",
-              fontSize: "0.9rem",
+              padding: "var(--space-3) var(--space-4)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--color-border-default)",
+              background: "var(--color-surface-base)",
+              color: "var(--color-text-tertiary)",
+              fontSize: "var(--font-size-2xl)",
+              cursor: "pointer",
             }}
           >
             <option value="">All Statuses</option>
@@ -186,12 +190,13 @@ export function BookList() {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as BookSortBy)}
             style={{
-              padding: "0.55rem 0.75rem",
-              borderRadius: "6px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-primary)",
-              color: "var(--text-primary)",
-              fontSize: "0.9rem",
+              padding: "var(--space-3) var(--space-4)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--color-border-default)",
+              background: "var(--color-surface-base)",
+              color: "var(--color-text-tertiary)",
+              fontSize: "var(--font-size-2xl)",
+              cursor: "pointer",
             }}
           >
             <option value="created_at">Date Added</option>

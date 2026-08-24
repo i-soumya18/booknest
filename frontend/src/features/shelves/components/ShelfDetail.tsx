@@ -193,8 +193,8 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
   };
 
   return (
-    <div style={{ padding: "1.5rem 0" }}>
-      <Link href="/shelves" style={{ color: "var(--accent-color)", textDecoration: "none", fontSize: "0.9rem" }}>
+    <div style={{ padding: "var(--space-6) 0" }}>
+      <Link href="/shelves" style={{ color: "var(--color-accent-primary)", textDecoration: "none", fontSize: "var(--font-size-2xl)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
         ← Back to Shelves
       </Link>
 
@@ -203,47 +203,52 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          margin: "1rem 0 1.5rem 0",
+          margin: "var(--space-4) 0 var(--space-8) 0",
           flexWrap: "wrap",
-          gap: "1rem",
+          gap: "var(--space-6)",
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <h2 style={{ fontSize: "1.75rem", color: "var(--text-primary)" }}>{shelfDetail.name}</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em" }}>
+              📁 {shelfDetail.name}
+            </h2>
             <span
               style={{
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                padding: "0.25rem 0.6rem",
-                borderRadius: "4px",
-                background: `${getRoleBadgeColor(userRole)}20`,
+                fontSize: "var(--font-size-lg)",
+                fontWeight: 700,
+                padding: "var(--space-1) var(--space-3)",
+                borderRadius: "var(--radius-full)",
+                background: `${getRoleBadgeColor(userRole)}18`,
                 color: getRoleBadgeColor(userRole),
-                border: `1px solid ${getRoleBadgeColor(userRole)}40`,
+                border: `1px solid ${getRoleBadgeColor(userRole)}50`,
+                letterSpacing: "0.02em",
               }}
             >
-              {userRole}
+              Role: {userRole}
             </span>
           </div>
           {shelfDetail.description && (
-            <p style={{ color: "var(--text-secondary)", marginTop: "0.25rem" }}>
+            <p style={{ color: "var(--color-text-primary)", marginTop: "var(--space-2)", fontSize: "var(--font-size-3xl)" }}>
               {shelfDetail.description}
             </p>
           )}
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "var(--space-3)" }}>
           {isOwner && (
             <button
               onClick={() => setIsShareOpen((prev) => !prev)}
               style={{
-                padding: "0.6rem 1rem",
-                background: "var(--bg-card)",
-                color: "var(--text-primary)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "6px",
-                fontSize: "0.9rem",
+                padding: "var(--space-3) var(--space-5)",
+                background: "var(--color-surface-muted)",
+                color: "var(--color-text-tertiary)",
+                border: "1px solid var(--color-border-default)",
+                borderRadius: "var(--radius-md)",
+                fontSize: "var(--font-size-2xl)",
+                fontWeight: 600,
                 cursor: "pointer",
+                transition: "all var(--motion-fast)",
               }}
             >
               👥 Manage Collaborators
@@ -257,14 +262,16 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
                 setIsAddBookOpen(true);
               }}
               style={{
-                padding: "0.6rem 1.2rem",
-                background: "var(--accent-color)",
-                color: "#fff",
+                padding: "var(--space-3) var(--space-6)",
+                background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
+                color: "#000000",
                 border: "none",
-                borderRadius: "6px",
-                fontSize: "0.9rem",
-                fontWeight: 600,
+                borderRadius: "var(--radius-md)",
+                fontSize: "var(--font-size-2xl)",
+                fontWeight: 700,
                 cursor: "pointer",
+                boxShadow: "var(--shadow-2)",
+                transition: "all var(--motion-fast)",
               }}
             >
               + Add Book to Shelf

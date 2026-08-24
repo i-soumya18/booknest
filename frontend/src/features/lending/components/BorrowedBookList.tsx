@@ -40,20 +40,20 @@ export function BorrowedBookList() {
   );
 
   return (
-    <div>
+    <div style={{ padding: "var(--space-6) 0" }}>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "1.5rem",
+          marginBottom: "var(--space-8)",
         }}
       >
         <div>
-          <h1 style={{ fontSize: "1.75rem", color: "var(--text-primary)", marginBottom: "0.25rem" }}>
+          <h1 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
             🤝 Borrowed Books
           </h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
+          <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
             Books lent to you by other users. Borrowed books are read-only.
           </p>
         </div>
@@ -62,12 +62,12 @@ export function BorrowedBookList() {
       {error && (
         <div
           style={{
-            background: "#ef444415",
-            border: "1px solid #ef444440",
-            color: "var(--error-color)",
-            padding: "0.75rem 1rem",
-            borderRadius: "6px",
-            marginBottom: "1.5rem",
+            background: "var(--color-error-bg)",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
+            color: "var(--color-error)",
+            padding: "var(--space-3) var(--space-4)",
+            borderRadius: "var(--radius-md)",
+            marginBottom: "var(--space-6)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -77,13 +77,14 @@ export function BorrowedBookList() {
           <button
             onClick={fetchBooks}
             style={{
-              padding: "0.35rem 0.75rem",
-              background: "var(--error-color)",
+              padding: "var(--space-2) var(--space-4)",
+              background: "var(--color-error)",
               color: "#fff",
               border: "none",
-              borderRadius: "4px",
+              borderRadius: "var(--radius-sm)",
               cursor: "pointer",
-              fontSize: "0.85rem",
+              fontSize: "var(--font-size-2xl)",
+              fontWeight: 600,
             }}
           >
             🔄 Retry
@@ -92,7 +93,7 @@ export function BorrowedBookList() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-secondary)" }}>
+        <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--color-text-secondary)" }}>
           Loading borrowed books...
         </div>
       ) : !data || data.items.length === 0 ? (
@@ -100,14 +101,14 @@ export function BorrowedBookList() {
           style={{
             textAlign: "center",
             padding: "4rem 2rem",
-            background: "var(--bg-surface)",
-            border: "1px dashed var(--border-color)",
-            borderRadius: "8px",
-            color: "var(--text-secondary)",
+            background: "var(--color-surface-raised)",
+            border: "1px dashed var(--color-border-default)",
+            borderRadius: "var(--radius-md)",
+            color: "var(--color-text-secondary)",
           }}
         >
-          <p style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>No borrowed books found</p>
-          <p style={{ fontSize: "0.875rem" }}>When someone lends you a book, it will appear here.</p>
+          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "var(--space-2)", fontWeight: 600 }}>No borrowed books found</p>
+          <p style={{ fontSize: "var(--font-size-3xl)" }}>When someone lends you a book, it will appear here in real-time.</p>
         </div>
       ) : (
         <>
@@ -115,8 +116,8 @@ export function BorrowedBookList() {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "1.25rem",
-              marginBottom: "2rem",
+              gap: "var(--space-6)",
+              marginBottom: "var(--space-8)",
             }}
           >
             {data.items.map((item) => {
@@ -129,14 +130,12 @@ export function BorrowedBookList() {
               return (
                 <div
                   key={item.lendingId}
+                  className="design-card"
                   style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "8px",
-                    padding: "1.25rem",
+                    padding: "var(--space-6)",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.75rem",
+                    gap: "var(--space-4)",
                     position: "relative",
                   }}
                 >

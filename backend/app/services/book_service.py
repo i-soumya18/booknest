@@ -56,7 +56,7 @@ class BookService:
     async def create_book(self, owner_id: UUID, data: BookCreateRequest) -> Book:
         if data.current_page > data.total_pages:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
                     "error": {
                         "code": "INVALID_PAGE_COUNT",
@@ -137,7 +137,7 @@ class BookService:
 
         if target_current > target_total:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
                     "error": {
                         "code": "INVALID_PAGE_COUNT",
@@ -176,7 +176,7 @@ class BookService:
 
         if current_page < 0:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
                     "error": {
                         "code": "INVALID_PROGRESS",
@@ -187,7 +187,7 @@ class BookService:
 
         if not book.total_pages or book.total_pages <= 0:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
                     "error": {
                         "code": "INVALID_TOTAL_PAGES",
@@ -198,7 +198,7 @@ class BookService:
 
         if current_page > book.total_pages:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail={
                     "error": {
                         "code": "INVALID_PROGRESS",

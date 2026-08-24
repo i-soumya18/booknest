@@ -48,12 +48,18 @@ class BookRepository:
 
         if sort_by == BookSortByEnum.TITLE:
             sort_column = Book.title
+            order_clause = sort_column.desc() if sort_order == SortOrderEnum.DESC else sort_column.asc()
         elif sort_by == BookSortByEnum.RATING:
             sort_column = Book.rating
+            order_clause = (
+                sort_column.desc().nulls_last()
+                if sort_order == SortOrderEnum.DESC
+                else sort_column.asc().nulls_last()
+            )
         else:
             sort_column = Book.created_at
+            order_clause = sort_column.desc() if sort_order == SortOrderEnum.DESC else sort_column.asc()
 
-        order_clause = sort_column.desc() if sort_order == SortOrderEnum.DESC else sort_column.asc()
         stmt = stmt.order_by(order_clause, Book.id.desc())
 
         offset_val = (page - 1) * page_size

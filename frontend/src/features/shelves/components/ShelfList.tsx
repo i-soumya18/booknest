@@ -63,20 +63,22 @@ export function ShelfList() {
   };
 
   return (
-    <div style={{ padding: "1.5rem 0" }}>
+    <div style={{ padding: "var(--space-6) 0" }}>
       {/* Header */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "1.5rem",
+          marginBottom: "var(--space-8)",
         }}
       >
         <div>
-          <h2 style={{ fontSize: "1.5rem", color: "var(--text-primary)" }}>My Shelves</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-            Organize your books into custom collections and shared team shelves.
+          <h2 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
+            My Shelves
+          </h2>
+          <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
+            Organize your books into custom collections and shared collaborative shelves.
           </p>
         </div>
         <button
@@ -85,14 +87,16 @@ export function ShelfList() {
             setIsFormOpen(true);
           }}
           style={{
-            padding: "0.6rem 1.2rem",
-            background: "var(--accent-color)",
-            color: "#fff",
+            padding: "var(--space-3) var(--space-6)",
+            background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
+            color: "#000000",
             border: "none",
-            borderRadius: "6px",
-            fontSize: "0.9rem",
-            fontWeight: 600,
+            borderRadius: "var(--radius-md)",
+            fontSize: "var(--font-size-2xl)",
+            fontWeight: 700,
             cursor: "pointer",
+            boxShadow: "var(--shadow-2)",
+            transition: "all var(--motion-fast)",
           }}
         >
           + New Shelf
@@ -103,42 +107,44 @@ export function ShelfList() {
       <div
         style={{
           display: "flex",
-          gap: "0.5rem",
-          marginBottom: "1.5rem",
-          borderBottom: "1px solid var(--border-color)",
-          paddingBottom: "0.5rem",
+          gap: "var(--space-3)",
+          marginBottom: "var(--space-8)",
+          borderBottom: "1px solid var(--color-border-default)",
+          paddingBottom: "var(--space-3)",
         }}
       >
         <button
           onClick={() => setActiveTab("all")}
           style={{
-            padding: "0.5rem 1rem",
+            padding: "var(--space-2) var(--space-5)",
             border: "none",
-            background: activeTab === "all" ? "var(--accent-color)" : "transparent",
-            color: activeTab === "all" ? "#fff" : "var(--text-secondary)",
-            borderRadius: "4px",
-            fontWeight: 600,
+            background: activeTab === "all" ? "var(--color-accent-primary)" : "transparent",
+            color: activeTab === "all" ? "#000000" : "var(--color-text-secondary)",
+            borderRadius: "var(--radius-md)",
+            fontWeight: 700,
             cursor: "pointer",
-            fontSize: "0.9rem",
+            fontSize: "var(--font-size-2xl)",
+            transition: "all var(--motion-fast)",
           }}
         >
-          All Shelves
+          📁 All Shelves
         </button>
 
         <button
           onClick={() => setActiveTab("shared")}
           style={{
-            padding: "0.5rem 1rem",
+            padding: "var(--space-2) var(--space-5)",
             border: "none",
-            background: activeTab === "shared" ? "var(--accent-color)" : "transparent",
-            color: activeTab === "shared" ? "#fff" : "var(--text-secondary)",
-            borderRadius: "4px",
-            fontWeight: 600,
+            background: activeTab === "shared" ? "var(--color-accent-primary)" : "transparent",
+            color: activeTab === "shared" ? "#000000" : "var(--color-text-secondary)",
+            borderRadius: "var(--radius-md)",
+            fontWeight: 700,
             cursor: "pointer",
-            fontSize: "0.9rem",
+            fontSize: "var(--font-size-2xl)",
+            transition: "all var(--motion-fast)",
           }}
         >
-          Shared With Me
+          🤝 Shared With Me
         </button>
       </div>
 

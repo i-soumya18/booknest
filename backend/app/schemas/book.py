@@ -29,8 +29,16 @@ class BookCreateRequest(BaseModel):
     status: BookStatusEnum = Field(default=BookStatusEnum.WANT_TO_READ)
     total_pages: int = Field(..., ge=1)
     current_page: int = Field(default=0, ge=0)
-    rating: float | int | None = Field(default=None, ge=1, le=5)
+    rating: int | None = Field(default=None, ge=1, le=5)
     notes: str | None = Field(default=None)
+
+    @field_validator("title", "author")
+    @classmethod
+    def validate_non_empty_strings(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Field cannot be empty or whitespace only")
+        return stripped
 
     @field_validator("current_page")
     @classmethod
@@ -47,8 +55,18 @@ class BookUpdateRequest(BaseModel):
     status: BookStatusEnum | None = Field(default=None)
     total_pages: int | None = Field(default=None, ge=1)
     current_page: int | None = Field(default=None, ge=0)
-    rating: float | int | None = Field(default=None, ge=1, le=5)
+    rating: int | None = Field(default=None, ge=1, le=5)
     notes: str | None = Field(default=None)
+
+    @field_validator("title", "author")
+    @classmethod
+    def validate_non_empty_optional_strings(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Field cannot be empty or whitespace only")
+        return stripped
 
 
 class BookResponse(BaseModel):

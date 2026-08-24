@@ -375,3 +375,32 @@ def test_return_book_restores_ownership(client):
     )
     assert prog_resp.status_code == 200
     assert prog_resp.json()["current_page"] == 50
+
+
+def test_return_book_errors(client):
+    """Verify error conditions when attempting to return a book."""
+    headers_owner, _ = _create_user_and_login(client, "ret_err_owner@example.com", "Ret Owner")
+    headers_other, _ = _create_user_and_login(client, "ret_err_other@example.com", "Ret Other")
+
+    book_resp = client.post(
+        "/api/v1/books",
+        headers=headers_owner,
+        json={"title": "Not Lent Book", "author": "Author", "total_pages": 100},
+    )
+    book_id = book_resp.json()["id"]
+
+    # 1. Attempting to return a book that is not lent out -> 404
+    r1 = client.post(f"/api/v1/books/{book_id}/return", headers=headers_owner)
+    assert r1.status_code == 404
+    assert r1.json()["detail"]["error"]["code"] == "NO_ACTIVE_LENDING"
+
+    # 2. Non-owner attempting to return the book -> 404
+    r2 = client.post(f"/api/v1/books/{book_id}/return", headers=headers_other)
+    assert r2.status_code == 404
+    assert r2.json()["detail"]["error"]["code"] == "BOOK_NOT_FOUND"
+
+    # 3. Non-existent book ID -> 404
+    fake_id = str(uuid.uuid4())
+    r3 = client.post(f"/api/v1/books/{fake_id}/return", headers=headers_owner)
+    assert r3.status_code == 404
+    assert r3.json()["detail"]["error"]["code"] == "BOOK_NOT_FOUND"

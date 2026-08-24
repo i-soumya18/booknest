@@ -48,22 +48,24 @@ export function Navbar() {
   return (
     <header
       style={{
-        borderBottom: "1px solid var(--border-color)",
-        background: "var(--bg-surface)",
+        borderBottom: "1px solid var(--color-border-default)",
+        background: "rgba(14, 45, 73, 0.95)",
+        backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 100,
+        boxShadow: "var(--shadow-1)",
       }}
     >
       <div
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "0.85rem 1.5rem",
+          padding: "var(--space-5) var(--space-8)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "1.5rem",
+          gap: "var(--space-8)",
         }}
       >
         {/* Brand */}
@@ -72,26 +74,28 @@ export function Navbar() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "0.6rem",
-            fontSize: "1.25rem",
-            fontWeight: "800",
-            color: "var(--text-primary)",
+            gap: "var(--space-3)",
+            fontSize: "var(--font-size-h3)",
+            fontWeight: "700",
+            color: "var(--color-text-tertiary)",
             textDecoration: "none",
+            letterSpacing: "-0.02em",
           }}
         >
-          <span style={{ fontSize: "1.5rem" }}>📚</span>
-          <span>BookNest</span>
+          <span style={{ fontSize: "1.4rem", filter: "drop-shadow(0 0 8px rgba(0, 194, 255, 0.4))" }}>📚</span>
+          <span>Book<span style={{ color: "var(--color-accent-primary)" }}>Nest</span></span>
         </Link>
 
         {/* Nav Links */}
-        <nav style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
+        <nav style={{ display: "flex", gap: "var(--space-7)", alignItems: "center" }}>
           <Link
             href="/"
             style={{
-              color: "var(--text-secondary)",
+              color: "var(--color-text-primary)",
               textDecoration: "none",
               fontWeight: 500,
-              fontSize: "0.95rem",
+              fontSize: "var(--font-size-4xl)",
+              transition: "color var(--motion-fast)",
             }}
           >
             Dashboard
@@ -99,10 +103,11 @@ export function Navbar() {
           <Link
             href="/books"
             style={{
-              color: "var(--text-secondary)",
+              color: "var(--color-text-primary)",
               textDecoration: "none",
               fontWeight: 500,
-              fontSize: "0.95rem",
+              fontSize: "var(--font-size-4xl)",
+              transition: "color var(--motion-fast)",
             }}
           >
             My Books
@@ -110,10 +115,11 @@ export function Navbar() {
           <Link
             href="/shelves"
             style={{
-              color: "var(--text-secondary)",
+              color: "var(--color-text-primary)",
               textDecoration: "none",
               fontWeight: 500,
-              fontSize: "0.95rem",
+              fontSize: "var(--font-size-4xl)",
+              transition: "color var(--motion-fast)",
             }}
           >
             Shelves
@@ -121,10 +127,11 @@ export function Navbar() {
           <Link
             href="/borrowed"
             style={{
-              color: "var(--text-secondary)",
+              color: "var(--color-text-primary)",
               textDecoration: "none",
               fontWeight: 500,
-              fontSize: "0.95rem",
+              fontSize: "var(--font-size-4xl)",
+              transition: "color var(--motion-fast)",
             }}
           >
             Borrowed
@@ -132,10 +139,11 @@ export function Navbar() {
           <Link
             href="/activity"
             style={{
-              color: "var(--text-secondary)",
+              color: "var(--color-text-primary)",
               textDecoration: "none",
               fontWeight: 500,
-              fontSize: "0.95rem",
+              fontSize: "var(--font-size-4xl)",
+              transition: "color var(--motion-fast)",
             }}
           >
             Activity
@@ -143,55 +151,58 @@ export function Navbar() {
         </nav>
 
         {/* User Auth Section */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.5rem",
-                  background: "#3b82f615",
-                  border: "1px solid #3b82f630",
-                  padding: "0.35rem 0.75rem",
-                  borderRadius: "20px",
-                  fontSize: "0.85rem",
-                  color: "#3b82f6",
+                  gap: "var(--space-2)",
+                  background: "var(--color-accent-bg)",
+                  border: "1px solid var(--color-border-muted)",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-full)",
+                  fontSize: "var(--font-size-2xl)",
+                  color: "var(--color-text-tertiary)",
                   fontWeight: 600,
                 }}
               >
-                <span>👤</span>
+                <span style={{ color: "var(--color-accent-primary)" }}>👤</span>
                 <span>{user.name}</span>
               </div>
               <button
                 onClick={() => logout()}
                 style={{
-                  padding: "0.4rem 0.85rem",
+                  padding: "var(--space-2) var(--space-4)",
                   background: "transparent",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "6px",
-                  color: "var(--text-secondary)",
+                  border: "1px solid var(--color-border-default)",
+                  borderRadius: "var(--radius-md)",
+                  color: "var(--color-text-primary)",
                   cursor: "pointer",
-                  fontSize: "0.85rem",
+                  fontSize: "var(--font-size-2xl)",
+                  transition: "all var(--motion-fast)",
                 }}
               >
                 Sign Out
               </button>
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
               <button
                 onClick={() => handleDemoLogin("alice@example.com")}
                 disabled={submitting}
                 style={{
-                  padding: "0.4rem 0.8rem",
-                  background: "var(--accent-color)",
-                  color: "#fff",
+                  padding: "var(--space-3) var(--space-4)",
+                  background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
+                  color: "#000000",
                   border: "none",
-                  borderRadius: "6px",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "var(--font-size-2xl)",
+                  fontWeight: 700,
                   cursor: "pointer",
+                  boxShadow: "var(--shadow-2)",
+                  transition: "all var(--motion-fast)",
                 }}
               >
                 Demo: Alice (Owner)
@@ -200,14 +211,15 @@ export function Navbar() {
                 onClick={() => handleDemoLogin("bob@example.com")}
                 disabled={submitting}
                 style={{
-                  padding: "0.4rem 0.8rem",
-                  background: "#10b981",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "6px",
-                  fontSize: "0.85rem",
+                  padding: "var(--space-3) var(--space-4)",
+                  background: "var(--color-surface-muted)",
+                  color: "var(--color-text-tertiary)",
+                  border: "1px solid var(--color-border-default)",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "var(--font-size-2xl)",
                   fontWeight: 600,
                   cursor: "pointer",
+                  transition: "all var(--motion-fast)",
                 }}
               >
                 Demo: Bob (Borrower)

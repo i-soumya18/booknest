@@ -12,38 +12,37 @@ interface ShelfCardProps {
 export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
   return (
     <div
+      className="design-card"
       style={{
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border-color)",
-        borderRadius: "8px",
-        padding: "1.25rem",
+        padding: "var(--space-6)",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        gap: "1rem",
+        gap: "var(--space-5)",
       }}
     >
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-2)" }}>
           <Link
             href={`/shelves/${shelf.id}`}
             style={{
-              fontSize: "1.2rem",
-              fontWeight: 600,
-              color: "var(--text-primary)",
+              fontSize: "var(--font-size-h3)",
+              fontWeight: 700,
+              color: "var(--color-text-tertiary)",
               textDecoration: "none",
+              letterSpacing: "-0.01em",
             }}
           >
-            {shelf.name}
+            📁 {shelf.name}
           </Link>
         </div>
         {shelf.description && (
           <p
             style={{
-              color: "var(--text-secondary)",
-              fontSize: "0.9rem",
-              marginTop: "0.5rem",
-              lineHeight: 1.4,
+              color: "var(--color-text-secondary)",
+              fontSize: "var(--font-size-2xl)",
+              marginTop: "var(--space-2)",
+              lineHeight: 1.5,
             }}
           >
             {shelf.description}
@@ -51,29 +50,31 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
         )}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--color-border-muted)", paddingTop: "var(--space-4)" }}>
         <Link
           href={`/shelves/${shelf.id}`}
           style={{
-            fontSize: "0.85rem",
-            color: "var(--accent-color)",
+            fontSize: "var(--font-size-2xl)",
+            color: "var(--color-accent-primary)",
             textDecoration: "none",
-            fontWeight: 500,
+            fontWeight: 600,
+            transition: "all var(--motion-fast)",
           }}
         >
-          View Books →
+          View Shelf & Books →
         </Link>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "var(--space-2)" }}>
           <button
             onClick={() => onEdit(shelf)}
             style={{
-              padding: "0.35rem 0.7rem",
-              fontSize: "0.8rem",
-              borderRadius: "4px",
-              background: "var(--bg-card)",
-              color: "var(--text-primary)",
-              border: "1px solid var(--border-color)",
+              padding: "var(--space-1) var(--space-3)",
+              fontSize: "var(--font-size-xl)",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-surface-muted)",
+              color: "var(--color-text-tertiary)",
+              border: "1px solid var(--color-border-default)",
               cursor: "pointer",
+              transition: "all var(--motion-fast)",
             }}
           >
             Edit
@@ -81,13 +82,14 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
           <button
             onClick={() => onDelete(shelf.id)}
             style={{
-              padding: "0.35rem 0.7rem",
-              fontSize: "0.8rem",
-              borderRadius: "4px",
-              background: "#ef444420",
-              color: "var(--error-color)",
-              border: "1px solid #ef444440",
+              padding: "var(--space-1) var(--space-3)",
+              fontSize: "var(--font-size-xl)",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-error-bg)",
+              color: "var(--color-error)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
               cursor: "pointer",
+              transition: "all var(--motion-fast)",
             }}
           >
             Delete

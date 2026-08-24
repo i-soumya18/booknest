@@ -72,25 +72,25 @@ export function ActivityFeed() {
 
 
   return (
-    <div>
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.75rem", color: "var(--text-primary)", marginBottom: "0.25rem" }}>
+    <div style={{ padding: "var(--space-6) 0" }}>
+      <div style={{ marginBottom: "var(--space-8)" }}>
+        <h1 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
           ⚡ Activity Log
         </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>
-          Reverse-chronological log of domain actions across books, shelves, collaborators, and lending.
+        <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
+          Reverse-chronological stream of domain actions across books, shelves, collaborators, and lending.
         </p>
       </div>
 
       {error && (
         <div
           style={{
-            background: "#ef444415",
-            border: "1px solid #ef444440",
-            color: "var(--error-color)",
-            padding: "0.75rem 1rem",
-            borderRadius: "6px",
-            marginBottom: "1.5rem",
+            background: "var(--color-error-bg)",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
+            color: "var(--color-error)",
+            padding: "var(--space-3) var(--space-4)",
+            borderRadius: "var(--radius-md)",
+            marginBottom: "var(--space-6)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -100,13 +100,14 @@ export function ActivityFeed() {
           <button
             onClick={fetchEvents}
             style={{
-              padding: "0.35rem 0.75rem",
-              background: "var(--error-color)",
+              padding: "var(--space-2) var(--space-4)",
+              background: "var(--color-error)",
               color: "#fff",
               border: "none",
-              borderRadius: "4px",
+              borderRadius: "var(--radius-sm)",
               cursor: "pointer",
-              fontSize: "0.85rem",
+              fontSize: "var(--font-size-2xl)",
+              fontWeight: 600,
             }}
           >
             🔄 Retry
@@ -115,86 +116,102 @@ export function ActivityFeed() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-secondary)" }}>
-          Loading activity log...
+        <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--color-text-secondary)" }}>
+          Loading activity stream...
         </div>
       ) : !data || data.items.length === 0 ? (
         <div
           style={{
             textAlign: "center",
             padding: "4rem 2rem",
-            background: "var(--bg-surface)",
-            border: "1px dashed var(--border-color)",
-            borderRadius: "8px",
-            color: "var(--text-secondary)",
+            background: "var(--color-surface-raised)",
+            border: "1px dashed var(--color-border-default)",
+            borderRadius: "var(--radius-md)",
+            color: "var(--color-text-secondary)",
           }}
         >
-          <p style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>No activity recorded yet</p>
-          <p style={{ fontSize: "0.875rem" }}>Actions like adding books, sharing shelves, and lending will appear here.</p>
+          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "var(--space-2)", fontWeight: 600 }}>No activity recorded yet</p>
+          <p style={{ fontSize: "var(--font-size-3xl)" }}>Actions like adding books, sharing shelves, and lending will appear here in real-time.</p>
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "2rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", marginBottom: "var(--space-8)" }}>
             {data.items.map((event) => (
               <div
                 key={event.id}
+                className="design-card"
                 style={{
-                  background: "var(--bg-surface)",
-                  border: "1px solid var(--border-color)",
-                  borderRadius: "8px",
-                  padding: "1rem 1.25rem",
+                  padding: "var(--space-4) var(--space-6)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  gap: "var(--space-4)",
                 }}
               >
-                <div style={{ fontSize: "0.95rem", color: "var(--text-primary)" }}>
+                <div style={{ fontSize: "var(--font-size-3xl)", color: "var(--color-text-tertiary)", lineHeight: 1.5 }}>
                   {renderEventDescription(event)}
                 </div>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", whiteSpace: "nowrap", marginLeft: "1rem" }}>
+                <div style={{ fontSize: "var(--font-size-md)", color: "var(--color-text-primary)", whiteSpace: "nowrap" }}>
                   {new Date(event.created_at || event.createdAt || Date.now()).toLocaleString()}
                 </div>
-
               </div>
             ))}
           </div>
 
-          {/* Pagination */}
-          {data.totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", alignItems: "center" }}>
+          {/* Server-Side Pagination */}
+          <div
+            className="design-card"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "var(--space-4)",
+              padding: "var(--space-4) var(--space-6)",
+            }}
+          >
+            <div style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-2xl)" }}>
+              Page <strong style={{ color: "var(--color-text-tertiary)" }}>{data.page}</strong> of <strong style={{ color: "var(--color-text-tertiary)" }}>{data.totalPages}</strong> ({data.total} total events)
+            </div>
+
+            <div style={{ display: "flex", gap: "var(--space-3)" }}>
               <button
                 disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 style={{
-                  padding: "0.4rem 0.8rem",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-surface)",
-                  color: "var(--text-primary)",
-                  cursor: "pointer",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--color-border-default)",
+                  background: "var(--color-surface-base)",
+                  color: page <= 1 ? "var(--color-text-inverse)" : "var(--color-text-tertiary)",
+                  cursor: page <= 1 ? "not-allowed" : "pointer",
+                  fontSize: "var(--font-size-2xl)",
+                  fontWeight: 600,
+                  transition: "all var(--motion-fast)",
                 }}
               >
-                Previous
+                ← Previous
               </button>
-              <span style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                Page {page} of {data.totalPages}
-              </span>
+
               <button
                 disabled={page >= data.totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                onClick={() => setPage((prev) => prev + 1)}
                 style={{
-                  padding: "0.4rem 0.8rem",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-surface)",
-                  color: "var(--text-primary)",
-                  cursor: "pointer",
+                  padding: "var(--space-2) var(--space-4)",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--color-border-default)",
+                  background: "var(--color-surface-base)",
+                  color: page >= data.totalPages ? "var(--color-text-inverse)" : "var(--color-text-tertiary)",
+                  cursor: page >= data.totalPages ? "not-allowed" : "pointer",
+                  fontSize: "var(--font-size-2xl)",
+                  fontWeight: 600,
+                  transition: "all var(--motion-fast)",
                 }}
               >
-                Next
+                Next →
               </button>
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

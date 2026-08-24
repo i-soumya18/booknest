@@ -183,12 +183,20 @@ export function DashboardView() {
   const totalBooks = Object.values(statusMap).reduce((a, b) => a + b, 0);
 
   return (
-    <div>
-      <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "2rem", color: "var(--text-primary)", marginBottom: "0.5rem" }}>
+    <div style={{ padding: "var(--space-6) 0" }}>
+      <div style={{ marginBottom: "var(--space-10)" }}>
+        <h1
+          style={{
+            fontSize: "var(--font-size-h1)",
+            color: "var(--color-text-tertiary)",
+            marginBottom: "var(--space-2)",
+            fontWeight: "700",
+            letterSpacing: "-0.02em",
+          }}
+        >
           📊 Dashboard Overview
         </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1rem" }}>
+        <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
           Real-time reading metrics and activity summary computed live from PostgreSQL.
         </p>
       </div>
@@ -198,54 +206,51 @@ export function DashboardView() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "1.25rem",
-          marginBottom: "2.5rem",
+          gap: "var(--space-6)",
+          marginBottom: "var(--space-10)",
         }}
       >
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.25rem",
+            padding: "var(--space-6)",
+            background: "linear-gradient(180deg, var(--color-surface-raised) 0%, rgba(14, 45, 73, 0.6) 100%)",
           }}
         >
-          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+          <div style={{ fontSize: "var(--font-size-2xl)", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)", fontWeight: 500 }}>
             📚 Total Books
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", color: "var(--text-primary)" }}>
+          <div style={{ fontSize: "2.2rem", fontWeight: "800", color: "var(--color-text-tertiary)", letterSpacing: "-0.03em" }}>
             {totalBooks}
           </div>
         </div>
 
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.25rem",
+            padding: "var(--space-6)",
+            background: "linear-gradient(180deg, var(--color-surface-raised) 0%, rgba(14, 45, 73, 0.6) 100%)",
           }}
         >
-          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+          <div style={{ fontSize: "var(--font-size-2xl)", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)", fontWeight: 500 }}>
             🎯 Finished This Year
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#10b981" }}>
+          <div style={{ fontSize: "2.2rem", fontWeight: "800", color: "var(--color-success)", letterSpacing: "-0.03em" }}>
             {metrics?.books_finished_this_year || 0}
           </div>
         </div>
 
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.25rem",
+            padding: "var(--space-6)",
+            background: "linear-gradient(180deg, var(--color-surface-raised) 0%, rgba(14, 45, 73, 0.6) 100%)",
           }}
         >
-          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+          <div style={{ fontSize: "var(--font-size-2xl)", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)", fontWeight: 500 }}>
             ⭐ Average Rating
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#f59e0b" }}>
+          <div style={{ fontSize: "2.2rem", fontWeight: "800", color: "var(--color-warning)", letterSpacing: "-0.03em" }}>
             {metrics?.average_rating !== null && metrics?.average_rating !== undefined
               ? `${metrics.average_rating} / 5`
               : "N/A"}
@@ -253,33 +258,31 @@ export function DashboardView() {
         </div>
 
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.25rem",
+            padding: "var(--space-6)",
+            background: "linear-gradient(180deg, var(--color-surface-raised) 0%, rgba(14, 45, 73, 0.6) 100%)",
           }}
         >
-          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+          <div style={{ fontSize: "var(--font-size-2xl)", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)", fontWeight: 500 }}>
             🤝 Currently Lent Out
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#6366f1" }}>
+          <div style={{ fontSize: "2.2rem", fontWeight: "800", color: "var(--color-accent-primary)", letterSpacing: "-0.03em" }}>
             {metrics?.books_currently_lent_out || 0}
           </div>
         </div>
 
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.25rem",
+            padding: "var(--space-6)",
+            background: "linear-gradient(180deg, var(--color-surface-raised) 0%, rgba(14, 45, 73, 0.6) 100%)",
           }}
         >
-          <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "0.5rem" }}>
+          <div style={{ fontSize: "var(--font-size-2xl)", color: "var(--color-text-secondary)", marginBottom: "var(--space-3)", fontWeight: 500 }}>
             📂 Shared Shelves
           </div>
-          <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#ec4899" }}>
+          <div style={{ fontSize: "2.2rem", fontWeight: "800", color: "#38d1ff", letterSpacing: "-0.03em" }}>
             {metrics?.shelves_shared_with_user || 0}
           </div>
         </div>
@@ -290,47 +293,48 @@ export function DashboardView() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "1.5rem",
-          marginBottom: "2.5rem",
+          gap: "var(--space-8)",
+          marginBottom: "var(--space-10)",
         }}
       >
         {/* Top Shelf Highlight */}
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.5rem",
+            padding: "var(--space-8)",
           }}
         >
-          <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--text-primary)" }}>
+          <h3 style={{ fontSize: "var(--font-size-h3)", marginBottom: "var(--space-5)", color: "var(--color-text-tertiary)", fontWeight: "600" }}>
             🏆 Top Shelf
           </h3>
           {metrics?.shelf_with_most_books ? (
             <div>
-              <p style={{ fontSize: "1.25rem", fontWeight: "600", color: "var(--accent-color)", marginBottom: "0.25rem" }}>
+              <p style={{ fontSize: "var(--font-size-h2)", fontWeight: "700", color: "var(--color-accent-primary)", marginBottom: "var(--space-2)" }}>
                 {metrics.shelf_with_most_books.name}
               </p>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1rem" }}>
-                Contains <strong>{metrics.shelf_with_most_books.book_count}</strong> book(s)
+              <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)", marginBottom: "var(--space-6)" }}>
+                Contains <strong style={{ color: "var(--color-text-tertiary)" }}>{metrics.shelf_with_most_books.book_count}</strong> book(s)
               </p>
               <Link
                 href={`/shelves/${metrics.shelf_with_most_books.id}`}
                 style={{
                   display: "inline-block",
-                  padding: "0.5rem 1rem",
-                  background: "var(--accent-color)",
-                  color: "#fff",
-                  borderRadius: "6px",
-                  fontSize: "0.875rem",
+                  padding: "var(--space-3) var(--space-6)",
+                  background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
+                  color: "#000000",
+                  fontWeight: "700",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: "var(--font-size-2xl)",
                   textDecoration: "none",
+                  boxShadow: "var(--shadow-2)",
+                  transition: "all var(--motion-fast)",
                 }}
               >
-                View Shelf
+                View Shelf →
               </Link>
             </div>
           ) : (
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)" }}>
               No shelves created yet.
             </p>
           )}
@@ -338,60 +342,61 @@ export function DashboardView() {
 
         {/* Status Distribution */}
         <div
+          className="design-card"
           style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border-color)",
-            borderRadius: "10px",
-            padding: "1.5rem",
+            padding: "var(--space-8)",
           }}
         >
-          <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", color: "var(--text-primary)" }}>
+          <h3 style={{ fontSize: "var(--font-size-h3)", marginBottom: "var(--space-5)", color: "var(--color-text-tertiary)", fontWeight: "600" }}>
             📖 Reading Status Breakdown
           </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)" }}>
                 <span>Want to Read</span>
-                <span>{statusMap["WANT_TO_READ"] || 0}</span>
+                <span style={{ fontWeight: 600, color: "var(--color-text-tertiary)" }}>{statusMap["WANT_TO_READ"] || 0}</span>
               </div>
-              <div style={{ height: "8px", background: "var(--border-color)", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ height: "8px", background: "var(--color-surface-muted)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
                 <div
                   style={{
                     height: "100%",
                     width: `${totalBooks ? ((statusMap["WANT_TO_READ"] || 0) / totalBooks) * 100 : 0}%`,
-                    background: "#3b82f6",
+                    background: "var(--color-accent-primary)",
+                    transition: "width var(--motion-normal)",
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)" }}>
                 <span>Currently Reading</span>
-                <span>{statusMap["READING"] || 0}</span>
+                <span style={{ fontWeight: 600, color: "var(--color-text-tertiary)" }}>{statusMap["READING"] || 0}</span>
               </div>
-              <div style={{ height: "8px", background: "var(--border-color)", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ height: "8px", background: "var(--color-surface-muted)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
                 <div
                   style={{
                     height: "100%",
                     width: `${totalBooks ? ((statusMap["READING"] || 0) / totalBooks) * 100 : 0}%`,
-                    background: "#f59e0b",
+                    background: "var(--color-warning)",
+                    transition: "width var(--motion-normal)",
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem", marginBottom: "0.25rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)" }}>
                 <span>Finished</span>
-                <span>{statusMap["FINISHED"] || 0}</span>
+                <span style={{ fontWeight: 600, color: "var(--color-text-tertiary)" }}>{statusMap["FINISHED"] || 0}</span>
               </div>
-              <div style={{ height: "8px", background: "var(--border-color)", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ height: "8px", background: "var(--color-surface-muted)", borderRadius: "var(--radius-full)", overflow: "hidden" }}>
                 <div
                   style={{
                     height: "100%",
                     width: `${totalBooks ? ((statusMap["FINISHED"] || 0) / totalBooks) * 100 : 0}%`,
-                    background: "#10b981",
+                    background: "var(--color-success)",
+                    transition: "width var(--motion-normal)",
                   }}
                 />
               </div>
@@ -402,26 +407,24 @@ export function DashboardView() {
 
       {/* Live Recent Activity */}
       <div
+        className="design-card"
         style={{
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border-color)",
-          borderRadius: "10px",
-          padding: "1.5rem",
+          padding: "var(--space-8)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h3 style={{ fontSize: "1.1rem", color: "var(--text-primary)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-6)" }}>
+          <h3 style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", fontWeight: "600" }}>
             ⚡ Live Activity Stream
           </h3>
-          <Link href="/activity" style={{ fontSize: "0.875rem", color: "var(--accent-color)", textDecoration: "none" }}>
+          <Link href="/activity" style={{ fontSize: "var(--font-size-2xl)", color: "var(--color-accent-primary)", fontWeight: 600, textDecoration: "none" }}>
             View Full Activity Log →
           </Link>
         </div>
 
         {!metrics?.recent_activity || metrics.recent_activity.length === 0 ? (
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>No recent activity recorded.</p>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)" }}>No recent activity recorded.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
             {metrics.recent_activity.map((evt) => {
               const eventType = evt.event_type || evt.eventType || "EVENT";
               const timestamp = evt.created_at || evt.createdAt || new Date().toISOString();
@@ -429,23 +432,22 @@ export function DashboardView() {
                 <div
                   key={evt.id}
                   style={{
-                    borderBottom: "1px solid var(--border-color)",
-                    paddingBottom: "0.75rem",
+                    borderBottom: "1px solid var(--color-border-muted)",
+                    paddingBottom: "var(--space-4)",
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "0.9rem",
+                    fontSize: "var(--font-size-2xl)",
                   }}
                 >
-                  <span style={{ color: "var(--text-primary)" }}>
-                    {eventType.replace(/_/g, " ")} — {evt.payload?.title || evt.payload?.name || evt.payload?.book_title || "item"}
+                  <span style={{ color: "var(--color-text-tertiary)" }}>
+                    <span style={{ color: "var(--color-accent-primary)", fontWeight: 600 }}>{eventType.replace(/_/g, " ")}</span> — {evt.payload?.title || evt.payload?.name || evt.payload?.book_title || "item"}
                   </span>
-                  <span style={{ color: "var(--text-secondary)", fontSize: "0.8rem" }}>
+                  <span style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-md)" }}>
                     {new Date(timestamp).toLocaleTimeString()}
                   </span>
                 </div>
               );
             })}
-
           </div>
         )}
       </div>

@@ -77,33 +77,32 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
 
   return (
     <div
+      className="design-card"
       style={{
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border-color)",
-        borderRadius: "8px",
-        padding: "1.25rem",
+        padding: "var(--space-6)",
         display: "flex",
         flexDirection: "column",
-        gap: "0.75rem",
+        gap: "var(--space-4)",
         position: "relative",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-3)" }}>
         <div>
-          <h3 style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.25rem" }}>
+          <h3 style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", fontWeight: "600", marginBottom: "var(--space-1)" }}>
             {book.title}
           </h3>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem" }}>by {book.author}</p>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-2xl)" }}>by {book.author}</p>
         </div>
         <span
           style={{
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            padding: "0.25rem 0.5rem",
-            borderRadius: "4px",
-            background: `${getStatusColor(book.status)}20`,
+            fontSize: "var(--font-size-lg)",
+            fontWeight: 700,
+            padding: "var(--space-1) var(--space-3)",
+            borderRadius: "var(--radius-full)",
+            background: `${getStatusColor(book.status)}18`,
             color: getStatusColor(book.status),
-            border: `1px solid ${getStatusColor(book.status)}40`,
+            border: `1px solid ${getStatusColor(book.status)}50`,
+            letterSpacing: "0.02em",
           }}
         >
           {book.status.replace(/_/g, " ")}
@@ -117,14 +116,14 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            fontSize: "0.85rem",
-            color: "var(--text-secondary)",
-            marginBottom: "0.25rem",
+            fontSize: "var(--font-size-2xl)",
+            color: "var(--color-text-primary)",
+            marginBottom: "var(--space-2)",
           }}
         >
           <span>Progress</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <span>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+            <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>
               {book.currentPage} / {book.totalPages} pages ({progressPercent}%)
             </span>
             {!isEditingProgress && (
@@ -138,10 +137,10 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
                 style={{
                   background: "transparent",
                   border: "none",
-                  color: "var(--accent-color)",
+                  color: "var(--color-accent-primary)",
                   cursor: "pointer",
-                  fontSize: "0.85rem",
-                  padding: "0 0.2rem",
+                  fontSize: "var(--font-size-2xl)",
+                  padding: "0 var(--space-1)",
                 }}
               >
                 ✏️
@@ -154,10 +153,10 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
           style={{
             width: "100%",
             height: "6px",
-            background: "var(--bg-card)",
-            borderRadius: "3px",
+            background: "var(--color-surface-muted)",
+            borderRadius: "var(--radius-full)",
             overflow: "hidden",
-            marginBottom: "0.5rem",
+            marginBottom: "var(--space-2)",
           }}
         >
           <div
@@ -165,7 +164,7 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
               width: `${progressPercent}%`,
               height: "100%",
               background: getStatusColor(book.status),
-              transition: "width 0.3s ease",
+              transition: "width var(--motion-normal)",
             }}
           />
         </div>
@@ -175,15 +174,15 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
           <form
             onSubmit={handleUpdateProgress}
             style={{
-              marginTop: "0.5rem",
-              padding: "0.5rem",
-              background: "var(--bg-primary)",
-              borderRadius: "6px",
-              border: "1px solid var(--border-color)",
+              marginTop: "var(--space-3)",
+              padding: "var(--space-3)",
+              background: "var(--color-surface-base)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--color-border-default)",
             }}
           >
-            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <label style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Page:</label>
+            <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+              <label style={{ fontSize: "var(--font-size-xl)", color: "var(--color-text-secondary)" }}>Page:</label>
               <input
                 type="number"
                 min="0"
@@ -195,26 +194,26 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
                 }}
                 style={{
                   width: "80px",
-                  padding: "0.25rem 0.4rem",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-surface)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.85rem",
+                  padding: "var(--space-1) var(--space-2)",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--color-border-default)",
+                  background: "var(--color-surface-raised)",
+                  color: "var(--color-text-tertiary)",
+                  fontSize: "var(--font-size-2xl)",
                 }}
               />
               <button
                 type="submit"
                 disabled={loading}
                 style={{
-                  padding: "0.25rem 0.6rem",
-                  fontSize: "0.8rem",
-                  borderRadius: "4px",
-                  background: "var(--accent-color)",
-                  color: "#fff",
+                  padding: "var(--space-1) var(--space-3)",
+                  fontSize: "var(--font-size-xl)",
+                  borderRadius: "var(--radius-sm)",
+                  background: "var(--color-accent-primary)",
+                  color: "#000000",
                   border: "none",
                   cursor: "pointer",
-                  fontWeight: 600,
+                  fontWeight: 700,
                 }}
               >
                 Save
@@ -226,12 +225,12 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
                   setProgressError(null);
                 }}
                 style={{
-                  padding: "0.25rem 0.5rem",
-                  fontSize: "0.8rem",
-                  borderRadius: "4px",
+                  padding: "var(--space-1) var(--space-3)",
+                  fontSize: "var(--font-size-xl)",
+                  borderRadius: "var(--radius-sm)",
                   background: "transparent",
-                  color: "var(--text-secondary)",
-                  border: "1px solid var(--border-color)",
+                  color: "var(--color-text-secondary)",
+                  border: "1px solid var(--color-border-default)",
                   cursor: "pointer",
                 }}
               >
@@ -243,9 +242,9 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
             {progressError && (
               <div
                 style={{
-                  color: "var(--error-color)",
-                  fontSize: "0.8rem",
-                  marginTop: "0.4rem",
+                  color: "var(--color-error)",
+                  fontSize: "var(--font-size-lg)",
+                  marginTop: "var(--space-2)",
                   fontWeight: 500,
                 }}
               >
@@ -258,7 +257,7 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
 
       {/* Rating & Notes */}
       {book.rating && (
-        <div style={{ fontSize: "0.9rem", color: "#f59e0b" }}>
+        <div style={{ fontSize: "var(--font-size-3xl)", color: "var(--color-warning)" }}>
           {"★".repeat(book.rating)}
           {"☆".repeat(5 - book.rating)}
         </div>
@@ -267,8 +266,8 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
       {book.notes && (
         <p
           style={{
-            fontSize: "0.85rem",
-            color: "var(--text-secondary)",
+            fontSize: "var(--font-size-xl)",
+            color: "var(--color-text-secondary)",
             fontStyle: "italic",
             lineHeight: 1.4,
           }}
@@ -280,9 +279,9 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
       {lendError && (
         <div
           style={{
-            fontSize: "0.8rem",
-            color: "var(--error-color)",
-            marginTop: "0.25rem",
+            fontSize: "var(--font-size-lg)",
+            color: "var(--color-error)",
+            marginTop: "var(--space-1)",
           }}
         >
           {lendError}
@@ -294,22 +293,23 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
         style={{
           display: "flex",
           justifyContent: "flex-end",
-          gap: "0.5rem",
-          marginTop: "0.5rem",
+          gap: "var(--space-2)",
+          marginTop: "var(--space-2)",
           flexWrap: "wrap",
         }}
       >
         <button
           onClick={() => setShowLendModal(true)}
           style={{
-            padding: "0.4rem 0.8rem",
-            fontSize: "0.85rem",
-            borderRadius: "4px",
-            background: "#8b5cf620",
-            color: "#8b5cf6",
-            border: "1px solid #8b5cf640",
+            padding: "var(--space-2) var(--space-4)",
+            fontSize: "var(--font-size-2xl)",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--color-accent-bg)",
+            color: "var(--color-accent-primary)",
+            border: "1px solid var(--color-border-muted)",
             cursor: "pointer",
-            fontWeight: 500,
+            fontWeight: 600,
+            transition: "all var(--motion-fast)",
           }}
         >
           🤝 Lend
@@ -317,13 +317,14 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
         <button
           onClick={handleReturn}
           style={{
-            padding: "0.4rem 0.8rem",
-            fontSize: "0.85rem",
-            borderRadius: "4px",
-            background: "var(--bg-card)",
-            color: "var(--text-secondary)",
-            border: "1px solid var(--border-color)",
+            padding: "var(--space-2) var(--space-4)",
+            fontSize: "var(--font-size-2xl)",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--color-surface-muted)",
+            color: "var(--color-text-primary)",
+            border: "1px solid var(--color-border-default)",
             cursor: "pointer",
+            transition: "all var(--motion-fast)",
           }}
           title="Mark returned if lent"
         >
@@ -332,13 +333,14 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
         <button
           onClick={() => onEdit(book)}
           style={{
-            padding: "0.4rem 0.8rem",
-            fontSize: "0.85rem",
-            borderRadius: "4px",
-            background: "var(--bg-card)",
-            color: "var(--text-primary)",
-            border: "1px solid var(--border-color)",
+            padding: "var(--space-2) var(--space-4)",
+            fontSize: "var(--font-size-2xl)",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--color-surface-muted)",
+            color: "var(--color-text-tertiary)",
+            border: "1px solid var(--color-border-default)",
             cursor: "pointer",
+            transition: "all var(--motion-fast)",
           }}
         >
           Edit
@@ -346,13 +348,14 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
         <button
           onClick={() => onDelete(book.id)}
           style={{
-            padding: "0.4rem 0.8rem",
-            fontSize: "0.85rem",
-            borderRadius: "4px",
-            background: "#ef444420",
-            color: "var(--error-color)",
-            border: "1px solid #ef444440",
+            padding: "var(--space-2) var(--space-4)",
+            fontSize: "var(--font-size-2xl)",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--color-error-bg)",
+            color: "var(--color-error)",
+            border: "1px solid rgba(239, 68, 68, 0.3)",
             cursor: "pointer",
+            transition: "all var(--motion-fast)",
           }}
         >
           Delete

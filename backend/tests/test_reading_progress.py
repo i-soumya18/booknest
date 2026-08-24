@@ -100,8 +100,15 @@ def test_reading_progress_validation_rejections(client):
     )
     assert resp_exceed.status_code == 422
 
+    # 3. Unauthenticated -> 401
+    resp_unauth = client.patch(
+        f"/api/v1/books/{b_id}/progress",
+        json={"current_page": 50},
+    )
+    assert resp_unauth.status_code == 401
 
-def test_reading_progress_unfinish_transition(client):
+
+def test_reading_progress_unfinish_and_reset_transitions(client):
     headers, _ = _create_user_and_login(client, "proguser4@example.com", "Prog User 4")
 
     # Create finished book
@@ -118,14 +125,26 @@ def test_reading_progress_unfinish_transition(client):
     )
     b_id = b_resp.json()["id"]
 
-    # Move progress back to 100 pages -> status transitions back to READING, finished_at is cleared
-    prog_resp = client.patch(
+    # 1. Move progress back to 100 pages -> transitions to READING, clears finished_at
+    prog_resp1 = client.patch(
         f"/api/v1/books/{b_id}/progress",
         headers=headers,
         json={"current_page": 100},
     )
-    assert prog_resp.status_code == 200
-    data = prog_resp.json()
-    assert data["current_page"] == 100
-    assert data["status"] == "READING"
-    assert data["finished_at"] is None
+    assert prog_resp1.status_code == 200
+    d1 = prog_resp1.json()
+    assert d1["current_page"] == 100
+    assert d1["status"] == "READING"
+    assert d1["finished_at"] is None
+
+    # 2. Move progress back to 0 pages -> stays in READING, clears finished_at
+    prog_resp2 = client.patch(
+        f"/api/v1/books/{b_id}/progress",
+        headers=headers,
+        json={"current_page": 0},
+    )
+    assert prog_resp2.status_code == 200
+    d2 = prog_resp2.json()
+    assert d2["current_page"] == 0
+    assert d2["status"] == "READING"
+    assert d2["finished_at"] is None
