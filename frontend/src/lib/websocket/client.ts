@@ -19,8 +19,15 @@ class WebSocketClient {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8005";
-    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || (apiUrl.replace(/^http/, "ws") + "/api/v1");
+    let baseUrl = process.env.NEXT_PUBLIC_WS_URL;
+    if (!baseUrl) {
+      if (typeof window !== "undefined") {
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        baseUrl = `${protocol}//${window.location.host}/api/v1`;
+      } else {
+        baseUrl = "ws://localhost:8001/api/v1";
+      }
+    }
     const wsUrl = `${baseUrl}/ws?token=${encodeURIComponent(token)}`;
 
 
