@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Book } from "@/types";
 import { fetchApi } from "@/lib/api/client";
 import { LendBookModal, returnBook } from "@/features/lending";
+import { Spinner } from "@/components/ui";
 
 interface BookCardProps {
   book: Book;
@@ -17,16 +18,21 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
   const [pageInput, setPageInput] = useState<number>(book.currentPage);
   const [progressError, setProgressError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [returning, setReturning] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [showLendModal, setShowLendModal] = useState(false);
   const [lendError, setLendError] = useState<string | null>(null);
 
   const handleReturn = async () => {
     setLendError(null);
+    setReturning(true);
     try {
       await returnBook(book.id);
       if (onProgressUpdated) onProgressUpdated();
     } catch (err) {
       setLendError(err instanceof Error ? err.message : "Failed to return book.");
+    } finally {
+      setReturning(false);
     }
   };
 
@@ -40,7 +46,7 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
       case "FINISHED":
         return "#10b981"; // green
       case "READING":
-        return "#3b82f6"; // blue
+        return "#00c2ff"; // cyan
       case "WANT_TO_READ":
       default:
         return "#f59e0b"; // amber
@@ -56,7 +62,7 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
       return;
     }
     if (pageInput > book.totalPages) {
-      setProgressError("Page cannot exceed total pages.");
+      setProgressError(`Page cannot exceed total pages (${book.totalPages}).`);
       return;
     }
 
@@ -103,6 +109,7 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
             color: getStatusColor(book.status),
             border: `1px solid ${getStatusColor(book.status)}50`,
             letterSpacing: "0.02em",
+            whiteSpace: "nowrap",
           }}
         >
           {book.status.replace(/_/g, " ")}
@@ -192,31 +199,15 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
                   setPageInput(Number(e.target.value));
                   setProgressError(null);
                 }}
-                style={{
-                  width: "80px",
-                  padding: "var(--space-1) var(--space-2)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-raised)",
-                  color: "var(--color-text-tertiary)",
-                  fontSize: "var(--font-size-2xl)",
-                }}
+                className={`input-field${progressError ? " error" : ""}`}
+                style={{ width: "90px", padding: "var(--space-1) var(--space-2)", fontSize: "var(--font-size-2xl)" }}
               />
               <button
                 type="submit"
                 disabled={loading}
-                style={{
-                  padding: "var(--space-1) var(--space-3)",
-                  fontSize: "var(--font-size-xl)",
-                  borderRadius: "var(--radius-sm)",
-                  background: "var(--color-accent-primary)",
-                  color: "#000000",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                }}
+                className="btn btn-primary btn-sm"
               >
-                Save
+                {loading ? <Spinner /> : null} Save
               </button>
               <button
                 type="button"
@@ -224,15 +215,7 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
                   setIsEditingProgress(false);
                   setProgressError(null);
                 }}
-                style={{
-                  padding: "var(--space-1) var(--space-3)",
-                  fontSize: "var(--font-size-xl)",
-                  borderRadius: "var(--radius-sm)",
-                  background: "transparent",
-                  color: "var(--color-text-secondary)",
-                  border: "1px solid var(--color-border-default)",
-                  cursor: "pointer",
-                }}
+                className="btn btn-ghost btn-sm"
               >
                 Cancel
               </button>
@@ -240,16 +223,9 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
 
             {/* Inline Error Message */}
             {progressError && (
-              <div
-                style={{
-                  color: "var(--color-error)",
-                  fontSize: "var(--font-size-lg)",
-                  marginTop: "var(--space-2)",
-                  fontWeight: 500,
-                }}
-              >
+              <p className="form-error" style={{ marginTop: "var(--space-2)" }}>
                 {progressError}
-              </div>
+              </p>
             )}
           </form>
         )}
@@ -277,15 +253,9 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
       )}
 
       {lendError && (
-        <div
-          style={{
-            fontSize: "var(--font-size-lg)",
-            color: "var(--color-error)",
-            marginTop: "var(--space-1)",
-          }}
-        >
+        <p className="form-error">
           {lendError}
-        </div>
+        </p>
       )}
 
       {/* Action Buttons */}
@@ -294,72 +264,62 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
           display: "flex",
           justifyContent: "flex-end",
           gap: "var(--space-2)",
-          marginTop: "var(--space-2)",
+          marginTop: "auto",
+          paddingTop: "var(--space-2)",
           flexWrap: "wrap",
         }}
       >
         <button
           onClick={() => setShowLendModal(true)}
+          className="btn btn-ghost btn-sm"
           style={{
-            padding: "var(--space-2) var(--space-4)",
-            fontSize: "var(--font-size-2xl)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--color-accent-bg)",
             color: "var(--color-accent-primary)",
-            border: "1px solid var(--color-border-muted)",
-            cursor: "pointer",
-            fontWeight: 600,
-            transition: "all var(--motion-fast)",
+            borderColor: "var(--color-border-muted)",
+            background: "var(--color-accent-bg)",
           }}
         >
           🤝 Lend
         </button>
         <button
           onClick={handleReturn}
-          style={{
-            padding: "var(--space-2) var(--space-4)",
-            fontSize: "var(--font-size-2xl)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--color-surface-muted)",
-            color: "var(--color-text-primary)",
-            border: "1px solid var(--color-border-default)",
-            cursor: "pointer",
-            transition: "all var(--motion-fast)",
-          }}
+          disabled={returning}
+          className="btn btn-secondary btn-sm"
           title="Mark returned if lent"
         >
-          ↩️ Return
+          {returning ? <Spinner /> : "↩️"} Return
         </button>
         <button
           onClick={() => onEdit(book)}
-          style={{
-            padding: "var(--space-2) var(--space-4)",
-            fontSize: "var(--font-size-2xl)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--color-surface-muted)",
-            color: "var(--color-text-tertiary)",
-            border: "1px solid var(--color-border-default)",
-            cursor: "pointer",
-            transition: "all var(--motion-fast)",
-          }}
+          className="btn btn-secondary btn-sm"
         >
           Edit
         </button>
-        <button
-          onClick={() => onDelete(book.id)}
-          style={{
-            padding: "var(--space-2) var(--space-4)",
-            fontSize: "var(--font-size-2xl)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--color-error-bg)",
-            color: "var(--color-error)",
-            border: "1px solid rgba(239, 68, 68, 0.3)",
-            cursor: "pointer",
-            transition: "all var(--motion-fast)",
-          }}
-        >
-          Delete
-        </button>
+        {confirmDelete ? (
+          <div style={{ display: "flex", gap: "var(--space-1)" }}>
+            <button
+              onClick={() => {
+                onDelete(book.id);
+                setConfirmDelete(false);
+              }}
+              className="btn btn-danger btn-sm"
+            >
+              Confirm?
+            </button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="btn btn-ghost btn-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="btn btn-danger btn-sm"
+          >
+            Delete
+          </button>
+        )}
       </div>
 
       {showLendModal && (

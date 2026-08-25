@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Book, BookStatus } from "@/types";
+import { FormField, Input, SelectField, TextareaField, Spinner, ErrorBanner } from "@/components/ui";
 
 export interface BookFormData {
   title: string;
@@ -27,19 +28,70 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
   const [currentPage, setCurrentPage] = useState<number>(initialData?.currentPage || 0);
   const [rating, setRating] = useState<number | undefined>(initialData?.rating || undefined);
   const [notes, setNotes] = useState(initialData?.notes || "");
-  const [error, setError] = useState<string | null>(null);
+  
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
+  const validateField = (name: string, val: any) => {
+    const newErrors = { ...errors };
+    if (name === "title") {
+      if (!String(val).trim()) newErrors.title = "Title is required.";
+      else delete newErrors.title;
+    }
+    if (name === "author") {
+      if (!String(val).trim()) newErrors.author = "Author is required.";
+      else delete newErrors.author;
+    }
+    if (name === "totalPages") {
+      const num = Number(val);
+      if (isNaN(num) || num < 1) newErrors.totalPages = "Total pages must be at least 1.";
+      else delete newErrors.totalPages;
+      // also recheck currentPage if totalPages changed
+      if (currentPage > num && num >= 1) {
+        newErrors.currentPage = `Page cannot exceed total pages (${num}).`;
+      } else if (currentPage <= num && currentPage >= 0) {
+        delete newErrors.currentPage;
+      }
+    }
+    if (name === "currentPage") {
+      const num = Number(val);
+      if (isNaN(num) || num < 0) newErrors.currentPage = "Page cannot be negative.";
+      else if (num > totalPages) newErrors.currentPage = `Page cannot exceed total pages (${totalPages}).`;
+      else delete newErrors.currentPage;
+    }
+    setErrors(newErrors);
+    return newErrors;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setSubmitted(true);
 
-    if (!title.trim() || !author.trim()) {
-      setError("Title and Author are required.");
-      return;
-    }
-    if (currentPage > totalPages) {
-      setError("Current page cannot exceed total pages.");
+    const titleErr = !title.trim() ? "Title is required." : "";
+    const authorErr = !author.trim() ? "Author is required." : "";
+    const tpErr = totalPages < 1 ? "Total pages must be at least 1." : "";
+    const cpErr = currentPage < 0 ? "Page cannot be negative." : currentPage > totalPages ? `Page cannot exceed total pages (${totalPages}).` : "";
+
+    const newErrors: Record<string, string> = {};
+    if (titleErr) newErrors.title = titleErr;
+    if (authorErr) newErrors.author = authorErr;
+    if (tpErr) newErrors.totalPages = tpErr;
+    if (cpErr) newErrors.currentPage = cpErr;
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
@@ -55,7 +107,7 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
         notes: notes.trim() || null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save book.");
+      setErrors({ _form: err instanceof Error ? err.message : "Failed to save book." });
     } finally {
       setLoading(false);
     }
@@ -74,6 +126,9 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
         zIndex: 50,
         padding: "var(--space-4)",
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
     >
       <div
         className="design-card"
@@ -82,108 +137,65 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
           maxWidth: "520px",
           padding: "var(--space-8)",
           boxShadow: "var(--shadow-3)",
+          maxHeight: "90vh",
+          overflowY: "auto",
         }}
       >
         <h2 style={{ fontSize: "var(--font-size-h2)", marginBottom: "var(--space-6)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em" }}>
           {initialData ? "✏️ Edit Book" : "✨ Add New Book"}
         </h2>
 
-        {error && (
-          <div
-            style={{
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              background: "var(--color-error-bg)",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-              color: "var(--color-error)",
-              fontSize: "var(--font-size-2xl)",
-              marginBottom: "var(--space-5)",
-              fontWeight: 500,
-            }}
-          >
-            {error}
+        {errors._form && (
+          <div style={{ marginBottom: "var(--space-5)" }}>
+            <ErrorBanner message={errors._form} />
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Title *</label>
-            <input
+          <FormField label="Title" required error={errors.title}>
+            <Input
               type="text"
-              required
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              error={!!errors.title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (submitted) validateField("title", e.target.value);
+              }}
+              onBlur={() => validateField("title", title)}
               placeholder="e.g. Designing Data-Intensive Applications"
-              style={{
-                width: "100%",
-                padding: "var(--space-3) var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface-base)",
-                color: "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-3xl)",
-              }}
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Author *</label>
-            <input
+          <FormField label="Author" required error={errors.author}>
+            <Input
               type="text"
-              required
               value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder="e.g. Martin Kleppmann"
-              style={{
-                width: "100%",
-                padding: "var(--space-3) var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface-base)",
-                color: "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-3xl)",
+              error={!!errors.author}
+              onChange={(e) => {
+                setAuthor(e.target.value);
+                if (submitted) validateField("author", e.target.value);
               }}
+              onBlur={() => validateField("author", author)}
+              placeholder="e.g. Martin Kleppmann"
             />
-          </div>
+          </FormField>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Status</label>
-              <select
+            <FormField label="Status">
+              <SelectField
                 value={status}
                 onChange={(e) => setStatus(e.target.value as BookStatus)}
-                style={{
-                  width: "100%",
-                  padding: "var(--space-3) var(--space-4)",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-base)",
-                  color: "var(--color-text-tertiary)",
-                  fontSize: "var(--font-size-2xl)",
-                  cursor: "pointer",
-                }}
               >
                 <option value="WANT_TO_READ">Want to Read</option>
                 <option value="READING">Reading</option>
                 <option value="FINISHED">Finished</option>
-              </select>
-            </div>
+              </SelectField>
+            </FormField>
 
-            <div>
-              <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Rating (1–5)</label>
-              <select
+            <FormField label="Rating (1–5)">
+              <SelectField
                 value={rating || ""}
                 onChange={(e) => setRating(e.target.value ? Number(e.target.value) : undefined)}
-                style={{
-                  width: "100%",
-                  padding: "var(--space-3) var(--space-4)",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-base)",
-                  color: "var(--color-text-tertiary)",
-                  fontSize: "var(--font-size-2xl)",
-                  cursor: "pointer",
-                }}
               >
                 <option value="">No rating</option>
                 <option value="1">⭐ 1 star</option>
@@ -191,105 +203,63 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
                 <option value="3">⭐⭐⭐ 3 stars</option>
                 <option value="4">⭐⭐⭐⭐ 4 stars</option>
                 <option value="5">⭐⭐⭐⭐⭐ 5 stars</option>
-              </select>
-            </div>
+              </SelectField>
+            </FormField>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Total Pages *</label>
-              <input
+            <FormField label="Total Pages" required error={errors.totalPages}>
+              <Input
                 type="number"
                 min="1"
-                required
                 value={totalPages}
-                onChange={(e) => setTotalPages(Number(e.target.value))}
-                style={{
-                  width: "100%",
-                  padding: "var(--space-3) var(--space-4)",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-base)",
-                  color: "var(--color-text-tertiary)",
-                  fontSize: "var(--font-size-3xl)",
+                error={!!errors.totalPages}
+                onChange={(e) => {
+                  setTotalPages(Number(e.target.value));
+                  if (submitted) validateField("totalPages", e.target.value);
                 }}
+                onBlur={() => validateField("totalPages", totalPages)}
               />
-            </div>
+            </FormField>
 
-            <div>
-              <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Current Page</label>
-              <input
+            <FormField label="Current Page" error={errors.currentPage}>
+              <Input
                 type="number"
                 min="0"
-                max={totalPages}
                 value={currentPage}
-                onChange={(e) => setCurrentPage(Number(e.target.value))}
-                style={{
-                  width: "100%",
-                  padding: "var(--space-3) var(--space-4)",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-base)",
-                  color: "var(--color-text-tertiary)",
-                  fontSize: "var(--font-size-3xl)",
+                error={!!errors.currentPage}
+                onChange={(e) => {
+                  setCurrentPage(Number(e.target.value));
+                  if (submitted) validateField("currentPage", e.target.value);
                 }}
+                onBlur={() => validateField("currentPage", currentPage)}
               />
-            </div>
+            </FormField>
           </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Notes</label>
-            <textarea
+          <FormField label="Notes">
+            <TextareaField
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional personal notes, takeaways, or quotes..."
-              style={{
-                width: "100%",
-                padding: "var(--space-3) var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface-base)",
-                color: "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-3xl)",
-                resize: "vertical",
-              }}
             />
-          </div>
+          </FormField>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
             <button
               type="button"
               onClick={onCancel}
-              style={{
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                background: "transparent",
-                color: "var(--color-text-primary)",
-                border: "1px solid var(--color-border-default)",
-                cursor: "pointer",
-                fontSize: "var(--font-size-2xl)",
-                transition: "all var(--motion-fast)",
-              }}
+              className="btn btn-ghost"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-                color: "#000000",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: "var(--font-size-2xl)",
-                boxShadow: "var(--shadow-2)",
-                transition: "all var(--motion-fast)",
-              }}
+              className="btn btn-primary"
             >
+              {loading ? <Spinner /> : null}
               {loading ? "Saving..." : initialData ? "Update Book" : "Add Book"}
             </button>
           </div>

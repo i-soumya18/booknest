@@ -5,6 +5,7 @@ import { Book, BookSortBy, BookStatus, PaginatedResponse, SortOrder } from "@/ty
 import { fetchApi } from "@/lib/api/client";
 import { BookCard } from "./BookCard";
 import { BookForm, BookFormData } from "./BookForm";
+import { Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
 
 export function BookList() {
   const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Book>>({
@@ -92,33 +93,20 @@ export function BookList() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "var(--space-8)",
+          flexWrap: "wrap",
+          gap: "var(--space-4)",
         }}
       >
-        <div>
-          <h2 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
-            My Book Library
-          </h2>
-          <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
-            Manage, filter, and track your reading collection with server-side pagination.
-          </p>
+        <div className="section-header" style={{ marginBottom: 0 }}>
+          <h2>My Book Library</h2>
+          <p>Manage, filter, and track your reading collection with server-side pagination.</p>
         </div>
         <button
           onClick={() => {
             setEditingBook(null);
             setIsFormOpen(true);
           }}
-          style={{
-            padding: "var(--space-3) var(--space-6)",
-            background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-            color: "#000000",
-            border: "none",
-            borderRadius: "var(--radius-md)",
-            fontSize: "var(--font-size-2xl)",
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "var(--shadow-2)",
-            transition: "all var(--motion-fast)",
-          }}
+          className="btn btn-primary"
         >
           + Add Book
         </button>
@@ -145,18 +133,9 @@ export function BookList() {
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              setPage(1); // Reset to first page on search change
+              setPage(1);
             }}
-            style={{
-              width: "100%",
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--color-border-default)",
-              background: "var(--color-surface-base)",
-              color: "var(--color-text-tertiary)",
-              fontSize: "var(--font-size-3xl)",
-              transition: "border-color var(--motion-fast)",
-            }}
+            className="input-field"
           />
         </div>
 
@@ -169,15 +148,8 @@ export function BookList() {
               setStatusFilter(e.target.value as BookStatus | "");
               setPage(1);
             }}
-            style={{
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--color-border-default)",
-              background: "var(--color-surface-base)",
-              color: "var(--color-text-tertiary)",
-              fontSize: "var(--font-size-2xl)",
-              cursor: "pointer",
-            }}
+            className="input-field"
+            style={{ width: "auto", cursor: "pointer" }}
           >
             <option value="">All Statuses</option>
             <option value="WANT_TO_READ">Want to Read</option>
@@ -189,15 +161,8 @@ export function BookList() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as BookSortBy)}
-            style={{
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--color-border-default)",
-              background: "var(--color-surface-base)",
-              color: "var(--color-text-tertiary)",
-              fontSize: "var(--font-size-2xl)",
-              cursor: "pointer",
-            }}
+            className="input-field"
+            style={{ width: "auto", cursor: "pointer" }}
           >
             <option value="created_at">Date Added</option>
             <option value="title">Title</option>
@@ -208,57 +173,45 @@ export function BookList() {
           <button
             onClick={toggleSortOrder}
             title={`Sort ${sortOrder === "asc" ? "Ascending" : "Descending"}`}
-            style={{
-              padding: "0.55rem 0.75rem",
-              borderRadius: "6px",
-              border: "1px solid var(--border-color)",
-              background: "var(--bg-primary)",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-            }}
+            className="btn btn-ghost btn-sm"
           >
             {sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
           </button>
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading Skeleton State */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-secondary)" }}>
-          Loading library...
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1.25rem",
+          }}
+          aria-label="Loading books"
+          aria-busy="true"
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonCard key={i} className="design-card">
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+                <Skeleton className="skeleton-title" width="65%" />
+                <Skeleton width="60px" height="20px" borderRadius="var(--radius-full)" />
+              </div>
+              <Skeleton className="skeleton-text" width="45%" style={{ marginBottom: "var(--space-6)" }} />
+              <Skeleton height="6px" style={{ marginBottom: "var(--space-6)" }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)", marginTop: "auto" }}>
+                <Skeleton width="50px" height="26px" borderRadius="var(--radius-sm)" />
+                <Skeleton width="50px" height="26px" borderRadius="var(--radius-sm)" />
+                <Skeleton width="50px" height="26px" borderRadius="var(--radius-sm)" />
+              </div>
+            </SkeletonCard>
+          ))}
         </div>
       )}
 
       {/* Error State */}
       {!loading && error && (
-        <div
-          style={{
-            padding: "1rem",
-            borderRadius: "8px",
-            background: "#ef444420",
-            border: "1px solid #ef444440",
-            color: "var(--error-color)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span>{error}</span>
-          <button
-            onClick={loadBooks}
-            style={{
-              padding: "0.4rem 0.8rem",
-              background: "var(--error-color)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Retry
-          </button>
-        </div>
+        <ErrorBanner message={error} onRetry={loadBooks} />
       )}
 
       {/* Empty State */}
@@ -267,17 +220,26 @@ export function BookList() {
           style={{
             textAlign: "center",
             padding: "4rem 1rem",
-            background: "var(--bg-surface)",
-            borderRadius: "8px",
-            border: "1px dashed var(--border-color)",
+            background: "var(--color-surface-raised)",
+            borderRadius: "var(--radius-md)",
+            border: "1px dashed var(--color-border-default)",
           }}
         >
-          <p style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem" }}>
+          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "0.5rem", fontWeight: 600 }}>
             No books found matching your criteria.
           </p>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
-            Try adjusting your search terms or filters.
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)", marginBottom: "1.5rem" }}>
+            Try adjusting your search terms or filters, or add your first book.
           </p>
+          <button
+            onClick={() => {
+              setEditingBook(null);
+              setIsFormOpen(true);
+            }}
+            className="btn btn-primary"
+          >
+            + Add First Book
+          </button>
         </div>
       )}
 
@@ -303,25 +265,22 @@ export function BookList() {
                 onDelete={handleDelete}
                 onProgressUpdated={loadBooks}
               />
-
             ))}
           </div>
 
           {/* Server-Side Pagination Footer */}
           <div
+            className="design-card"
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               flexWrap: "wrap",
               gap: "1rem",
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "8px",
-              padding: "0.75rem 1.25rem",
+              padding: "var(--space-4) var(--space-6)",
             }}
           >
-            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <div style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-2xl)" }}>
               Showing {paginatedData.items.length} of {paginatedData.total} books (Page {paginatedData.page} of{" "}
               {paginatedData.totalPages})
             </div>
@@ -333,14 +292,8 @@ export function BookList() {
                   setPageSize(Number(e.target.value));
                   setPage(1);
                 }}
-                style={{
-                  padding: "0.35rem 0.5rem",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-primary)",
-                  color: "var(--text-primary)",
-                  fontSize: "0.85rem",
-                }}
+                className="input-field"
+                style={{ width: "auto", padding: "var(--space-1) var(--space-3)", fontSize: "var(--font-size-2xl)" }}
               >
                 <option value="10">10 per page</option>
                 <option value="20">20 per page</option>
@@ -350,33 +303,17 @@ export function BookList() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                style={{
-                  padding: "0.35rem 0.75rem",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-primary)",
-                  color: page <= 1 ? "var(--text-secondary)" : "var(--text-primary)",
-                  cursor: page <= 1 ? "not-allowed" : "pointer",
-                  fontSize: "0.85rem",
-                }}
+                className="btn btn-ghost btn-sm"
               >
-                Previous
+                ← Previous
               </button>
 
               <button
                 disabled={page >= paginatedData.totalPages}
                 onClick={() => setPage((prev) => prev + 1)}
-                style={{
-                  padding: "0.35rem 0.75rem",
-                  borderRadius: "4px",
-                  border: "1px solid var(--border-color)",
-                  background: "var(--bg-primary)",
-                  color: page >= paginatedData.totalPages ? "var(--text-secondary)" : "var(--text-primary)",
-                  cursor: page >= paginatedData.totalPages ? "not-allowed" : "pointer",
-                  fontSize: "0.85rem",
-                }}
+                className="btn btn-ghost btn-sm"
               >
-                Next
+                Next →
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { Shelf } from "@/types";
 import { fetchApi } from "@/lib/api/client";
 import { ShelfCard } from "./ShelfCard";
 import { ShelfForm, ShelfFormData } from "./ShelfForm";
+import { Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
 
 type FilterTab = "all" | "shared";
 
@@ -71,33 +72,20 @@ export function ShelfList() {
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: "var(--space-8)",
+          flexWrap: "wrap",
+          gap: "var(--space-4)",
         }}
       >
-        <div>
-          <h2 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
-            My Shelves
-          </h2>
-          <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
-            Organize your books into custom collections and shared collaborative shelves.
-          </p>
+        <div className="section-header" style={{ marginBottom: 0 }}>
+          <h2>My Shelves</h2>
+          <p>Organize your books into custom collections and shared collaborative shelves.</p>
         </div>
         <button
           onClick={() => {
             setEditingShelf(null);
             setIsFormOpen(true);
           }}
-          style={{
-            padding: "var(--space-3) var(--space-6)",
-            background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-            color: "#000000",
-            border: "none",
-            borderRadius: "var(--radius-md)",
-            fontSize: "var(--font-size-2xl)",
-            fontWeight: 700,
-            cursor: "pointer",
-            boxShadow: "var(--shadow-2)",
-            transition: "all var(--motion-fast)",
-          }}
+          className="btn btn-primary"
         >
           + New Shelf
         </button>
@@ -148,42 +136,37 @@ export function ShelfList() {
         </button>
       </div>
 
-      {/* Loading State */}
+      {/* Loading Skeleton State */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "3rem 1rem", color: "var(--text-secondary)" }}>
-          Loading shelves...
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1.25rem",
+          }}
+          aria-busy="true"
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} className="design-card" style={{ minHeight: "140px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <Skeleton className="skeleton-title" width="60%" style={{ marginBottom: "var(--space-3)" }} />
+                <Skeleton className="skeleton-text" width="80%" />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--color-border-muted)", paddingTop: "var(--space-3)" }}>
+                <Skeleton width="110px" height="18px" />
+                <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                  <Skeleton width="48px" height="26px" borderRadius="var(--radius-sm)" />
+                  <Skeleton width="48px" height="26px" borderRadius="var(--radius-sm)" />
+                </div>
+              </div>
+            </SkeletonCard>
+          ))}
         </div>
       )}
 
       {/* Error State */}
       {!loading && error && (
-        <div
-          style={{
-            padding: "1rem",
-            borderRadius: "8px",
-            background: "#ef444420",
-            border: "1px solid #ef444440",
-            color: "var(--error-color)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span>{error}</span>
-          <button
-            onClick={loadShelves}
-            style={{
-              padding: "0.4rem 0.8rem",
-              background: "var(--error-color)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Retry
-          </button>
-        </div>
+        <ErrorBanner message={error} onRetry={loadShelves} />
       )}
 
       {/* Empty State */}
@@ -192,17 +175,17 @@ export function ShelfList() {
           style={{
             textAlign: "center",
             padding: "4rem 1rem",
-            background: "var(--bg-surface)",
-            borderRadius: "8px",
-            border: "1px dashed var(--border-color)",
+            background: "var(--color-surface-raised)",
+            borderRadius: "var(--radius-md)",
+            border: "1px dashed var(--color-border-default)",
           }}
         >
-          <p style={{ fontSize: "1.2rem", color: "var(--text-primary)", marginBottom: "0.5rem" }}>
+          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "0.5rem", fontWeight: 600 }}>
             {activeTab === "shared" ? "No shelves shared with you yet." : "No custom shelves created yet."}
           </p>
-          <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)", marginBottom: "1.5rem" }}>
             {activeTab === "shared"
-              ? "When someone shares a shelf with you, it will appear here."
+              ? "When someone shares a shelf with you, it will appear here in real-time."
               : "Create shelves to categorize your reading library (e.g. Sci-Fi, Favorites, To Buy)."}
           </p>
           {activeTab === "all" && (
@@ -211,15 +194,7 @@ export function ShelfList() {
                 setEditingShelf(null);
                 setIsFormOpen(true);
               }}
-              style={{
-                padding: "0.6rem 1.2rem",
-                background: "var(--accent-color)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              className="btn btn-primary"
             >
               + Create First Shelf
             </button>

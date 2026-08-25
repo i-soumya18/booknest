@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DashboardMetrics, getDashboardMetrics } from "../api";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useAuth } from "@/features/auth";
-
+import { Spinner, Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
 
 export function DashboardView() {
   const { user, loading: authLoading, login } = useAuth();
@@ -57,8 +57,11 @@ export function DashboardView() {
 
   if (authLoading) {
     return (
-      <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-secondary)" }}>
-        Initializing authentication...
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "50vh", gap: "var(--space-4)" }}>
+        <Spinner size="lg" />
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)" }}>
+          Initializing authentication...
+        </p>
       </div>
     );
   }
@@ -66,139 +69,138 @@ export function DashboardView() {
   if (!user) {
     return (
       <div
+        className="design-card"
         style={{
           maxWidth: "650px",
           margin: "3rem auto",
-          background: "var(--bg-surface)",
-          border: "1px solid var(--border-color)",
-          borderRadius: "14px",
-          padding: "2.5rem",
+          padding: "var(--space-8)",
           textAlign: "center",
-          boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+          boxShadow: "var(--shadow-3)",
         }}
       >
-        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📚</div>
-        <h2 style={{ fontSize: "1.75rem", marginBottom: "0.75rem", color: "var(--text-primary)" }}>
+        <div style={{ fontSize: "3.5rem", marginBottom: "var(--space-4)", filter: "drop-shadow(0 0 12px rgba(0, 194, 255, 0.4))" }}>📚</div>
+        <h2 style={{ fontSize: "var(--font-size-h1)", marginBottom: "var(--space-3)", color: "var(--color-text-tertiary)", fontWeight: 700, letterSpacing: "-0.02em" }}>
           Welcome to BookNest
         </h2>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1rem", lineHeight: 1.6, marginBottom: "2rem" }}>
+        <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)", lineHeight: 1.6, marginBottom: "var(--space-8)" }}>
           Production-minded reading tracker featuring custom shelf RBAC, real-time WebSockets, atomic page progress tracking, and lending concurrency controls.
         </p>
 
-        <div style={{ marginBottom: "1.5rem" }}>
-          <p style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "1rem" }}>
+        <div style={{ marginBottom: "var(--space-6)" }}>
+          <p style={{ fontSize: "var(--font-size-2xl)", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "var(--space-4)", letterSpacing: "0.05em" }}>
             QUICK DEMO SIGN-IN
           </p>
-          <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", flexWrap: "wrap" }}>
             <button
               onClick={() => handleQuickLogin("alice@example.com")}
               disabled={loggingIn}
-              style={{
-                padding: "0.75rem 1.5rem",
-                background: "var(--accent-color)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
-              }}
+              className="btn btn-primary"
             >
-              {loggingIn ? "Logging in..." : "👤 Sign in as Alice (Owner)"}
+              {loggingIn ? <Spinner /> : "👤"} Sign in as Alice (Owner)
             </button>
             <button
               onClick={() => handleQuickLogin("bob@example.com")}
               disabled={loggingIn}
-              style={{
-                padding: "0.75rem 1.5rem",
-                background: "#10b981",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
-              }}
+              className="btn btn-secondary"
             >
-              {loggingIn ? "Logging in..." : "👤 Sign in as Bob (Borrower)"}
+              {loggingIn ? <Spinner /> : "👤"} Sign in as Bob (Borrower)
             </button>
           </div>
         </div>
 
         {error && (
-          <p style={{ color: "var(--error-color)", fontSize: "0.85rem", marginTop: "1rem" }}>
-            {error}
-          </p>
+          <div style={{ marginTop: "var(--space-4)" }}>
+            <ErrorBanner message={error} />
+          </div>
         )}
       </div>
     );
   }
 
+  // Dashboard Loading State with Shimmer Skeletons
   if (loading && !metrics) {
     return (
-      <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-secondary)" }}>
-        Loading dashboard...
-      </div>
-    );
-  }
+      <div style={{ padding: "var(--space-6) 0" }} aria-label="Loading dashboard" aria-busy="true">
+        <div className="section-header">
+          <Skeleton className="skeleton-title" width="280px" style={{ marginBottom: "var(--space-2)" }} />
+          <Skeleton className="skeleton-text" width="450px" />
+        </div>
 
-  if (error && !metrics) {
-    return (
-      <div
-        style={{
-          background: "#ef444415",
-          border: "1px solid #ef444440",
-          color: "var(--error-color)",
-          padding: "1rem 1.25rem",
-          borderRadius: "8px",
-          margin: "2rem 0",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <span>{error}</span>
-        <button
-          onClick={fetchMetrics}
+        {/* 5-Card Stats Skeleton */}
+        <div
           style={{
-            padding: "0.4rem 0.8rem",
-            background: "var(--error-color)",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontSize: "0.85rem",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "var(--space-6)",
+            marginBottom: "var(--space-10)",
           }}
         >
-          🔄 Retry
-        </button>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonCard key={i} className="design-card">
+              <Skeleton className="skeleton-text" width="60%" style={{ marginBottom: "var(--space-3)" }} />
+              <Skeleton width="45%" height="36px" />
+            </SkeletonCard>
+          ))}
+        </div>
+
+        {/* 2-Column Row Skeleton */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: "var(--space-8)",
+            marginBottom: "var(--space-10)",
+          }}
+        >
+          <SkeletonCard>
+            <Skeleton className="skeleton-title" width="40%" style={{ marginBottom: "var(--space-4)" }} />
+            <Skeleton className="skeleton-title" width="70%" style={{ marginBottom: "var(--space-2)" }} />
+            <Skeleton className="skeleton-text" width="50%" style={{ marginBottom: "var(--space-4)" }} />
+            <Skeleton width="120px" height="32px" borderRadius="var(--radius-md)" />
+          </SkeletonCard>
+          <SkeletonCard>
+            <Skeleton className="skeleton-title" width="55%" style={{ marginBottom: "var(--space-5)" }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <Skeleton height="16px" />
+              <Skeleton height="16px" />
+              <Skeleton height="16px" />
+            </div>
+          </SkeletonCard>
+        </div>
+
+        {/* Activity Stream Skeleton */}
+        <SkeletonCard>
+          <Skeleton className="skeleton-title" width="30%" style={{ marginBottom: "var(--space-6)" }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", paddingBottom: "var(--space-3)", borderBottom: "1px solid var(--color-border-muted)" }}>
+                <Skeleton className="skeleton-text" width="60%" />
+                <Skeleton className="skeleton-text" width="70px" />
+              </div>
+            ))}
+          </div>
+        </SkeletonCard>
       </div>
     );
   }
 
+  // Dashboard Error State
+  if (error && !metrics) {
+    return (
+      <div style={{ padding: "var(--space-6) 0" }}>
+        <ErrorBanner message={error} onRetry={fetchMetrics} />
+      </div>
+    );
+  }
 
   const statusMap = metrics?.books_by_status || {};
   const totalBooks = Object.values(statusMap).reduce((a, b) => a + b, 0);
 
   return (
     <div style={{ padding: "var(--space-6) 0" }}>
-      <div style={{ marginBottom: "var(--space-10)" }}>
-        <h1
-          style={{
-            fontSize: "var(--font-size-h1)",
-            color: "var(--color-text-tertiary)",
-            marginBottom: "var(--space-2)",
-            fontWeight: "700",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          📊 Dashboard Overview
-        </h1>
-        <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
-          Real-time reading metrics and activity summary computed live from PostgreSQL.
-        </p>
+      <div className="section-header">
+        <h1>📊 Dashboard Overview</h1>
+        <p>Real-time reading metrics and activity summary computed live from PostgreSQL.</p>
       </div>
 
       {/* Metrics Cards Grid */}
@@ -317,18 +319,7 @@ export function DashboardView() {
               </p>
               <Link
                 href={`/shelves/${metrics.shelf_with_most_books.id}`}
-                style={{
-                  display: "inline-block",
-                  padding: "var(--space-3) var(--space-6)",
-                  background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-                  color: "#000000",
-                  fontWeight: "700",
-                  borderRadius: "var(--radius-md)",
-                  fontSize: "var(--font-size-2xl)",
-                  textDecoration: "none",
-                  boxShadow: "var(--shadow-2)",
-                  transition: "all var(--motion-fast)",
-                }}
+                className="btn btn-primary"
               >
                 View Shelf →
               </Link>

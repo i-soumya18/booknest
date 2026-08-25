@@ -1,15 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Shelf } from "@/types";
+import { Spinner } from "@/components/ui";
 
 interface ShelfCardProps {
   shelf: Shelf;
   onEdit: (shelf: Shelf) => void;
-  onDelete: (shelfId: string) => void;
+  onDelete: (shelfId: string) => Promise<void> | void;
 }
 
 export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await onDelete(shelf.id);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
   return (
     <div
       className="design-card"
@@ -66,34 +81,35 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
         <div style={{ display: "flex", gap: "var(--space-2)" }}>
           <button
             onClick={() => onEdit(shelf)}
-            style={{
-              padding: "var(--space-1) var(--space-3)",
-              fontSize: "var(--font-size-xl)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--color-surface-muted)",
-              color: "var(--color-text-tertiary)",
-              border: "1px solid var(--color-border-default)",
-              cursor: "pointer",
-              transition: "all var(--motion-fast)",
-            }}
+            className="btn btn-secondary btn-sm"
           >
             Edit
           </button>
-          <button
-            onClick={() => onDelete(shelf.id)}
-            style={{
-              padding: "var(--space-1) var(--space-3)",
-              fontSize: "var(--font-size-xl)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--color-error-bg)",
-              color: "var(--color-error)",
-              border: "1px solid rgba(239, 68, 68, 0.3)",
-              cursor: "pointer",
-              transition: "all var(--motion-fast)",
-            }}
-          >
-            Delete
-          </button>
+          {confirmDelete ? (
+            <div style={{ display: "flex", gap: "var(--space-1)" }}>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="btn btn-danger btn-sm"
+              >
+                {deleting ? <Spinner /> : null}
+                {deleting ? "Deleting..." : "Confirm?"}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="btn btn-ghost btn-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="btn btn-danger btn-sm"
+            >
+              Delete
+            </button>
+          )}
         </div>
       </div>
     </div>

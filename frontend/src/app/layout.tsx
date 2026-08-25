@@ -14,7 +14,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <AuthProvider>
           <Navbar />
-          {children}
+          <main className="page-container">
+            {children}
+          </main>
         </AuthProvider>
       </body>
     </html>

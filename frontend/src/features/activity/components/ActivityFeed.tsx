@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityEvent, PaginatedResponse } from "@/types";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getActivityFeed } from "../api";
+import { Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
 
 export function ActivityFeed() {
   const [data, setData] = useState<PaginatedResponse<ActivityEvent> | null>(null);
@@ -70,56 +71,43 @@ export function ActivityFeed() {
     }
   };
 
-
   return (
     <div style={{ padding: "var(--space-6) 0" }}>
-      <div style={{ marginBottom: "var(--space-8)" }}>
-        <h1 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em", marginBottom: "var(--space-2)" }}>
-          ⚡ Activity Log
-        </h1>
-        <p style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-4xl)" }}>
-          Reverse-chronological stream of domain actions across books, shelves, collaborators, and lending.
-        </p>
+      <div className="section-header">
+        <h1>⚡ Activity Log</h1>
+        <p>Reverse-chronological stream of domain actions across books, shelves, collaborators, and lending.</p>
       </div>
 
       {error && (
-        <div
-          style={{
-            background: "var(--color-error-bg)",
-            border: "1px solid rgba(239, 68, 68, 0.4)",
-            color: "var(--color-error)",
-            padding: "var(--space-3) var(--space-4)",
-            borderRadius: "var(--radius-md)",
-            marginBottom: "var(--space-6)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span>{error}</span>
-          <button
-            onClick={fetchEvents}
-            style={{
-              padding: "var(--space-2) var(--space-4)",
-              background: "var(--color-error)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              cursor: "pointer",
-              fontSize: "var(--font-size-2xl)",
-              fontWeight: 600,
-            }}
-          >
-            🔄 Retry
-          </button>
+        <div style={{ marginBottom: "var(--space-6)" }}>
+          <ErrorBanner message={error} onRetry={fetchEvents} />
         </div>
       )}
 
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "4rem 0", color: "var(--color-text-secondary)" }}>
-          Loading activity stream...
+      {/* Loading Skeleton List */}
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", marginBottom: "var(--space-8)" }} aria-busy="true">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <SkeletonCard
+              key={i}
+              className="design-card"
+              style={{
+                padding: "var(--space-4) var(--space-6)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "var(--space-4)",
+              }}
+            >
+              <Skeleton className="skeleton-text" width={`${50 + (i % 4) * 12}%`} />
+              <Skeleton className="skeleton-text" width="80px" />
+            </SkeletonCard>
+          ))}
         </div>
-      ) : !data || data.items.length === 0 ? (
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && (!data || data.items.length === 0) && (
         <div
           style={{
             textAlign: "center",
@@ -133,7 +121,10 @@ export function ActivityFeed() {
           <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "var(--space-2)", fontWeight: 600 }}>No activity recorded yet</p>
           <p style={{ fontSize: "var(--font-size-3xl)" }}>Actions like adding books, sharing shelves, and lending will appear here in real-time.</p>
         </div>
-      ) : (
+      )}
+
+      {/* Success State */}
+      {!loading && !error && data && data.items.length > 0 && (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", marginBottom: "var(--space-8)" }}>
             {data.items.map((event) => (
@@ -178,17 +169,7 @@ export function ActivityFeed() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                style={{
-                  padding: "var(--space-2) var(--space-4)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-base)",
-                  color: page <= 1 ? "var(--color-text-inverse)" : "var(--color-text-tertiary)",
-                  cursor: page <= 1 ? "not-allowed" : "pointer",
-                  fontSize: "var(--font-size-2xl)",
-                  fontWeight: 600,
-                  transition: "all var(--motion-fast)",
-                }}
+                className="btn btn-ghost btn-sm"
               >
                 ← Previous
               </button>
@@ -196,17 +177,7 @@ export function ActivityFeed() {
               <button
                 disabled={page >= data.totalPages}
                 onClick={() => setPage((prev) => prev + 1)}
-                style={{
-                  padding: "var(--space-2) var(--space-4)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--color-border-default)",
-                  background: "var(--color-surface-base)",
-                  color: page >= data.totalPages ? "var(--color-text-inverse)" : "var(--color-text-tertiary)",
-                  cursor: page >= data.totalPages ? "not-allowed" : "pointer",
-                  fontSize: "var(--font-size-2xl)",
-                  fontWeight: 600,
-                  transition: "all var(--motion-fast)",
-                }}
+                className="btn btn-ghost btn-sm"
               >
                 Next →
               </button>

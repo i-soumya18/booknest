@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Book } from "@/types";
 import { lendBook } from "../api";
+import { FormField, Input, Spinner, ErrorBanner } from "@/components/ui";
 
 interface LendBookModalProps {
   book: Book;
@@ -12,15 +13,41 @@ interface LendBookModalProps {
 
 export function LendBookModal({ book, onClose, onSuccess }: LendBookModalProps) {
   const [borrowerEmail, setBorrowerEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  // Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
-    if (!borrowerEmail.trim()) {
-      setError("Please enter borrower email.");
+  const validateEmail = (val: string) => {
+    const newErrors = { ...errors };
+    const trimmed = val.trim();
+    if (!trimmed) {
+      newErrors.email = "Borrower email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      newErrors.email = "Please enter a valid email address.";
+    } else {
+      delete newErrors.email;
+    }
+    setErrors(newErrors);
+    return newErrors;
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitted(true);
+
+    const validation = validateEmail(borrowerEmail);
+    if (validation.email) {
       return;
     }
 
@@ -30,7 +57,7 @@ export function LendBookModal({ book, onClose, onSuccess }: LendBookModalProps) 
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to lend book.");
+      setErrors({ _form: err instanceof Error ? err.message : "Failed to lend book." });
     } finally {
       setLoading(false);
     }
@@ -52,6 +79,9 @@ export function LendBookModal({ book, onClose, onSuccess }: LendBookModalProps) 
         zIndex: 1000,
         padding: "var(--space-4)",
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
         className="design-card"
@@ -69,88 +99,41 @@ export function LendBookModal({ book, onClose, onSuccess }: LendBookModalProps) 
           Enter the registered email of the user you want to lend this book to.
         </p>
 
-        {error && (
-          <div
-            style={{
-              background: "var(--color-error-bg)",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-              color: "var(--color-error)",
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              marginBottom: "var(--space-5)",
-              fontSize: "var(--font-size-2xl)",
-              fontWeight: 500,
-            }}
-          >
-            {error}
+        {errors._form && (
+          <div style={{ marginBottom: "var(--space-5)" }}>
+            <ErrorBanner message={errors._form} />
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "var(--font-size-2xl)",
-                fontWeight: 500,
-                color: "var(--color-text-primary)",
-                marginBottom: "var(--space-2)",
-              }}
-            >
-              Borrower Email *
-            </label>
-            <input
+          <FormField label="Borrower Email" required error={errors.email}>
+            <Input
               type="email"
-              required
               placeholder="e.g. bob@example.com"
               value={borrowerEmail}
-              onChange={(e) => setBorrowerEmail(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "var(--space-3) var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface-base)",
-                color: "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-3xl)",
+              error={!!errors.email}
+              onChange={(e) => {
+                setBorrowerEmail(e.target.value);
+                if (submitted) validateEmail(e.target.value);
               }}
+              onBlur={() => validateEmail(borrowerEmail)}
             />
-          </div>
+          </FormField>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
             <button
               type="button"
               onClick={onClose}
-              style={{
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                background: "transparent",
-                color: "var(--color-text-primary)",
-                border: "1px solid var(--color-border-default)",
-                fontSize: "var(--font-size-2xl)",
-                cursor: "pointer",
-                transition: "all var(--motion-fast)",
-              }}
+              className="btn btn-ghost"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-                color: "#000000",
-                border: "none",
-                fontSize: "var(--font-size-2xl)",
-                fontWeight: 700,
-                cursor: "pointer",
-                opacity: loading ? 0.7 : 1,
-                boxShadow: "var(--shadow-2)",
-                transition: "all var(--motion-fast)",
-              }}
+              className="btn btn-primary"
             >
+              {loading ? <Spinner /> : null}
               {loading ? "Lending..." : "Confirm Lend"}
             </button>
           </div>

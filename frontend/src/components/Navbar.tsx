@@ -1,24 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/features/auth";
+import { Spinner } from "@/components/ui";
 
 export function Navbar() {
   const { user, login, logout } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const pathname = usePathname();
   const [authError, setAuthError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleDemoLogin = async (demoEmail: string) => {
     setAuthError(null);
     setSubmitting(true);
     try {
       await login(demoEmail, "Password123!");
+      setMobileOpen(false);
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -26,24 +26,13 @@ export function Navbar() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    setSubmitting(true);
-    try {
-      if (isSignup) {
-        // Sign up logic via context or api
-        await login(email, password);
-      } else {
-        await login(email, password);
-      }
-      setShowAuthModal(false);
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Auth action failed");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const navLinks = [
+    { href: "/", label: "Dashboard" },
+    { href: "/books", label: "My Books" },
+    { href: "/shelves", label: "Shelves" },
+    { href: "/borrowed", label: "Borrowed" },
+    { href: "/activity", label: "Activity" },
+  ];
 
   return (
     <header
@@ -61,11 +50,11 @@ export function Navbar() {
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "var(--space-5) var(--space-8)",
+          padding: "var(--space-4) var(--space-8)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          gap: "var(--space-8)",
+          gap: "var(--space-6)",
         }}
       >
         {/* Brand */}
@@ -86,72 +75,37 @@ export function Navbar() {
           <span>Book<span style={{ color: "var(--color-accent-primary)" }}>Nest</span></span>
         </Link>
 
-        {/* Nav Links */}
-        <nav style={{ display: "flex", gap: "var(--space-7)", alignItems: "center" }}>
-          <Link
-            href="/"
-            style={{
-              color: "var(--color-text-primary)",
-              textDecoration: "none",
-              fontWeight: 500,
-              fontSize: "var(--font-size-4xl)",
-              transition: "color var(--motion-fast)",
-            }}
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/books"
-            style={{
-              color: "var(--color-text-primary)",
-              textDecoration: "none",
-              fontWeight: 500,
-              fontSize: "var(--font-size-4xl)",
-              transition: "color var(--motion-fast)",
-            }}
-          >
-            My Books
-          </Link>
-          <Link
-            href="/shelves"
-            style={{
-              color: "var(--color-text-primary)",
-              textDecoration: "none",
-              fontWeight: 500,
-              fontSize: "var(--font-size-4xl)",
-              transition: "color var(--motion-fast)",
-            }}
-          >
-            Shelves
-          </Link>
-          <Link
-            href="/borrowed"
-            style={{
-              color: "var(--color-text-primary)",
-              textDecoration: "none",
-              fontWeight: 500,
-              fontSize: "var(--font-size-4xl)",
-              transition: "color var(--motion-fast)",
-            }}
-          >
-            Borrowed
-          </Link>
-          <Link
-            href="/activity"
-            style={{
-              color: "var(--color-text-primary)",
-              textDecoration: "none",
-              fontWeight: 500,
-              fontSize: "var(--font-size-4xl)",
-              transition: "color var(--motion-fast)",
-            }}
-          >
-            Activity
-          </Link>
+        {/* Desktop Nav Links */}
+        <nav className="nav-desktop-links" style={{ display: "flex", gap: "var(--space-7)", alignItems: "center" }}>
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`nav-link ${isActive ? "nav-link-active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+                style={{
+                  color: isActive ? "var(--color-text-tertiary)" : "var(--color-text-primary)",
+                  textDecoration: "none",
+                  fontWeight: isActive ? 600 : 500,
+                  fontSize: "var(--font-size-4xl)",
+                  transition: "color var(--motion-fast)",
+                }}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* User Auth Section */}
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
+        {/* Desktop User Auth Section */}
+        <div className="nav-desktop-auth" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+          {authError && (
+            <span style={{ color: "var(--color-error)", fontSize: "var(--font-size-xl)", marginRight: "var(--space-2)" }}>
+              {authError}
+            </span>
+          )}
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
               <div
@@ -173,16 +127,7 @@ export function Navbar() {
               </div>
               <button
                 onClick={() => logout()}
-                style={{
-                  padding: "var(--space-2) var(--space-4)",
-                  background: "transparent",
-                  border: "1px solid var(--color-border-default)",
-                  borderRadius: "var(--radius-md)",
-                  color: "var(--color-text-primary)",
-                  cursor: "pointer",
-                  fontSize: "var(--font-size-2xl)",
-                  transition: "all var(--motion-fast)",
-                }}
+                className="btn btn-ghost btn-sm"
               >
                 Sign Out
               </button>
@@ -192,37 +137,89 @@ export function Navbar() {
               <button
                 onClick={() => handleDemoLogin("alice@example.com")}
                 disabled={submitting}
-                style={{
-                  padding: "var(--space-3) var(--space-4)",
-                  background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-                  color: "#000000",
-                  border: "none",
-                  borderRadius: "var(--radius-md)",
-                  fontSize: "var(--font-size-2xl)",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: "var(--shadow-2)",
-                  transition: "all var(--motion-fast)",
-                }}
+                className="btn btn-primary btn-sm"
               >
-                Demo: Alice (Owner)
+                {submitting ? <Spinner /> : null} Demo: Alice (Owner)
               </button>
               <button
                 onClick={() => handleDemoLogin("bob@example.com")}
                 disabled={submitting}
-                style={{
-                  padding: "var(--space-3) var(--space-4)",
-                  background: "var(--color-surface-muted)",
-                  color: "var(--color-text-tertiary)",
-                  border: "1px solid var(--color-border-default)",
-                  borderRadius: "var(--radius-md)",
-                  fontSize: "var(--font-size-2xl)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  transition: "all var(--motion-fast)",
-                }}
+                className="btn btn-secondary btn-sm"
               >
-                Demo: Bob (Borrower)
+                {submitting ? <Spinner /> : null} Demo: Bob (Borrower)
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Hamburger Toggle */}
+        <button
+          className="nav-hamburger"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          aria-label="Toggle Navigation Menu"
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? "✕" : "☰"}
+        </button>
+      </div>
+
+      {/* Mobile Dropdown Menu */}
+      <div className={`nav-mobile-menu ${mobileOpen ? "open" : ""}`}>
+        {navLinks.map((link) => {
+          const isActive = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={() => setMobileOpen(false)}
+              style={{
+                color: isActive ? "var(--color-accent-primary)" : "var(--color-text-tertiary)",
+                fontSize: "var(--font-size-2xl)",
+                fontWeight: isActive ? 700 : 500,
+                padding: "var(--space-2) 0",
+              }}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+
+        <div style={{ borderTop: "1px solid var(--color-border-default)", paddingTop: "var(--space-4)", marginTop: "var(--space-2)" }}>
+          {authError && (
+            <p style={{ color: "var(--color-error)", fontSize: "var(--font-size-xl)", marginBottom: "var(--space-2)" }}>
+              {authError}
+            </p>
+          )}
+          {user ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "var(--color-text-tertiary)", fontSize: "var(--font-size-2xl)" }}>
+                👤 {user.name}
+              </span>
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileOpen(false);
+                }}
+                className="btn btn-ghost btn-sm"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+              <button
+                onClick={() => handleDemoLogin("alice@example.com")}
+                disabled={submitting}
+                className="btn btn-primary btn-sm"
+              >
+                {submitting ? <Spinner /> : null} Sign in as Alice (Owner)
+              </button>
+              <button
+                onClick={() => handleDemoLogin("bob@example.com")}
+                disabled={submitting}
+                className="btn btn-secondary btn-sm"
+              >
+                {submitting ? <Spinner /> : null} Sign in as Bob (Borrower)
               </button>
             </div>
           )}

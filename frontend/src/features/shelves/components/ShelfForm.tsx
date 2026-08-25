@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Shelf } from "@/types";
+import { FormField, Input, TextareaField, Spinner, ErrorBanner } from "@/components/ui";
 
 export interface ShelfFormData {
   name: string;
@@ -17,15 +18,38 @@ interface ShelfFormProps {
 export function ShelfForm({ initialData, onSubmit, onCancel }: ShelfFormProps) {
   const [name, setName] = useState(initialData?.name || "");
   const [description, setDescription] = useState(initialData?.description || "");
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Close modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
+  const validateField = (val: string) => {
+    const newErrors = { ...errors };
+    if (!val.trim()) {
+      newErrors.name = "Shelf name is required.";
+    } else {
+      delete newErrors.name;
+    }
+    setErrors(newErrors);
+    return newErrors;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setSubmitted(true);
 
     if (!name.trim()) {
-      setError("Shelf name is required.");
+      setErrors({ name: "Shelf name is required." });
       return;
     }
 
@@ -36,7 +60,7 @@ export function ShelfForm({ initialData, onSubmit, onCancel }: ShelfFormProps) {
         description: description.trim() || null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save shelf.");
+      setErrors({ _form: err instanceof Error ? err.message : "Failed to save shelf." });
     } finally {
       setLoading(false);
     }
@@ -55,6 +79,9 @@ export function ShelfForm({ initialData, onSubmit, onCancel }: ShelfFormProps) {
         zIndex: 50,
         padding: "var(--space-4)",
       }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
     >
       <div
         className="design-card"
@@ -69,97 +96,50 @@ export function ShelfForm({ initialData, onSubmit, onCancel }: ShelfFormProps) {
           {initialData ? "✏️ Edit Shelf" : "📁 Create New Shelf"}
         </h2>
 
-        {error && (
-          <div
-            style={{
-              padding: "var(--space-3) var(--space-4)",
-              borderRadius: "var(--radius-md)",
-              background: "var(--color-error-bg)",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-              color: "var(--color-error)",
-              fontSize: "var(--font-size-2xl)",
-              marginBottom: "var(--space-5)",
-              fontWeight: 500,
-            }}
-          >
-            {error}
+        {errors._form && (
+          <div style={{ marginBottom: "var(--space-5)" }}>
+            <ErrorBanner message={errors._form} />
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Shelf Name *</label>
-            <input
+          <FormField label="Shelf Name" required error={errors.name}>
+            <Input
               type="text"
-              required
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Sci-Fi, System Design, To Buy"
-              style={{
-                width: "100%",
-                padding: "var(--space-3) var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface-base)",
-                color: "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-3xl)",
+              error={!!errors.name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (submitted) validateField(e.target.value);
               }}
+              onBlur={() => validateField(name)}
+              placeholder="e.g. Sci-Fi, System Design, To Buy"
             />
-          </div>
+          </FormField>
 
-          <div>
-            <label style={{ display: "block", fontSize: "var(--font-size-2xl)", marginBottom: "var(--space-2)", color: "var(--color-text-primary)", fontWeight: 500 }}>Description</label>
-            <textarea
+          <FormField label="Description">
+            <TextareaField
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description of this collection..."
-              style={{
-                width: "100%",
-                padding: "var(--space-3) var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--color-border-default)",
-                background: "var(--color-surface-base)",
-                color: "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-3xl)",
-                resize: "vertical",
-              }}
             />
-          </div>
+          </FormField>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
             <button
               type="button"
               onClick={onCancel}
-              style={{
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                background: "transparent",
-                color: "var(--color-text-primary)",
-                border: "1px solid var(--color-border-default)",
-                cursor: "pointer",
-                fontSize: "var(--font-size-2xl)",
-                transition: "all var(--motion-fast)",
-              }}
+              className="btn btn-ghost"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              style={{
-                padding: "var(--space-3) var(--space-6)",
-                borderRadius: "var(--radius-md)",
-                background: "linear-gradient(135deg, #00c2ff 0%, #0070f3 100%)",
-                color: "#000000",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: "var(--font-size-2xl)",
-                boxShadow: "var(--shadow-2)",
-                transition: "all var(--motion-fast)",
-              }}
+              className="btn btn-primary"
             >
+              {loading ? <Spinner /> : null}
               {loading ? "Saving..." : initialData ? "Update Shelf" : "Create Shelf"}
             </button>
           </div>
