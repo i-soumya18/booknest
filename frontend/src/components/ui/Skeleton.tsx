@@ -19,7 +19,7 @@ export function Skeleton({ width = "100%", height = "16px", borderRadius, classN
 }
 
 interface SkeletonCardProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -31,3 +31,4 @@ export function SkeletonCard({ children, className = "", style }: SkeletonCardPr
     </div>
   );
 }
+

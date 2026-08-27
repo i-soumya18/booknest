@@ -61,12 +61,15 @@ export interface ShelfDetail extends Shelf {
 }
 
 export interface Collaborator {
-  userId: string;
+  userId?: string;
+  user_id?: string;
   email: string;
   name: string;
   role: ShelfRole;
-  createdAt: string;
+  createdAt?: string;
+  created_at?: string;
 }
+
 
 export interface Lending {
   id: string;

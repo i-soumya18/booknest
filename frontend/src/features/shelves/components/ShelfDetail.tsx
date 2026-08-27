@@ -6,17 +6,19 @@ import { Book, Collaborator, PaginatedResponse, ShelfDetail as IShelfDetail, She
 import { fetchApi } from "@/lib/api/client";
 import { BookCard } from "@/features/books/components/BookCard";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { Spinner, Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
+import { Spinner, Skeleton, SkeletonCard, ErrorBanner, useToast } from "@/components/ui";
 
 interface ShelfDetailProps {
   shelfId: string;
 }
 
 export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
+  const { success, error: toastError } = useToast();
   const [shelfDetail, setShelfDetail] = useState<IShelfDetail | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [availableBooks, setAvailableBooks] = useState<Book[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string>("");
+  const [bookSearch, setBookSearch] = useState<string>("");
 
   const [collabEmail, setCollabEmail] = useState("");
   const [collabRole, setCollabRole] = useState<ShelfRole>("VIEWER");
@@ -49,11 +51,12 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
   useWebSocket(
     useCallback(
       (event: any) => {
-        if (event.shelf_id === shelfId) {
+        if (event.shelf_id === shelfId || event.shelfId === shelfId) {
           loadShelf();
+          success("Shelf updated live via WebSocket room!");
         }
       },
-      [shelfId, loadShelf]
+      [shelfId, loadShelf, success]
     )
   );
 
@@ -70,19 +73,21 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
     loadShelf();
   }, [loadShelf]);
 
-  const handleAddBook = async () => {
-    if (!selectedBookId) return;
+  const handleAddBook = async (bookIdToAdd?: string) => {
+    const id = bookIdToAdd || selectedBookId;
+    if (!id) return;
     setError(null);
     setActionLoading(true);
     try {
-      await fetchApi(`/api/v1/shelves/${shelfId}/books/${selectedBookId}`, {
+      await fetchApi(`/api/v1/shelves/${shelfId}/books/${id}`, {
         method: "POST",
       });
+      success("Book added to shelf", "WebSocket event broadcast to shelf room.");
       setIsAddBookOpen(false);
       setSelectedBookId("");
       loadShelf();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add book to shelf.");
+      toastError("Failed to add book", err instanceof Error ? err.message : "RBAC or network error");
     } finally {
       setActionLoading(false);
     }
@@ -94,9 +99,10 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
       await fetchApi(`/api/v1/shelves/${shelfId}/books/${bookId}`, {
         method: "DELETE",
       });
+      success("Book removed from shelf");
       loadShelf();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove book from shelf.");
+      toastError("Failed to remove book", err instanceof Error ? err.message : "RBAC error");
     }
   };
 
@@ -111,10 +117,11 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
         method: "POST",
         body: JSON.stringify({ email: collabEmail.trim(), role: collabRole }),
       });
+      success(`Invited ${collabEmail} as ${collabRole}`);
       setCollabEmail("");
       loadShelf();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add collaborator.");
+      toastError("Failed to add collaborator", err instanceof Error ? err.message : "Error");
     } finally {
       setActionLoading(false);
     }
@@ -127,9 +134,10 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
         method: "PUT",
         body: JSON.stringify({ role: newRole }),
       });
+      success(`Updated collaborator role to ${newRole}`);
       loadShelf();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role.");
+      toastError("Failed to update role", err instanceof Error ? err.message : "Error");
     }
   };
 
@@ -140,49 +148,49 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
       await fetchApi(`/api/v1/shelves/${shelfId}/collaborators/${userId}`, {
         method: "DELETE",
       });
+      success("Collaborator removed");
       loadShelf();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove collaborator.");
+      toastError("Failed to remove collaborator", err instanceof Error ? err.message : "Error");
     } finally {
       setRemovingCollabId(null);
       setConfirmRemoveCollabId(null);
     }
   };
 
-  // SKELETON LOADING STATE
   if (loading) {
     return (
-      <div style={{ padding: "var(--space-6) 0" }} aria-busy="true">
-        <Skeleton width="120px" height="18px" style={{ marginBottom: "var(--space-6)" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-8)", flexWrap: "wrap", gap: "var(--space-4)" }}>
+      <div style={{ padding: "16px 0" }} aria-busy="true">
+        <Skeleton width="120px" height="18px" style={{ marginBottom: "16px" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
           <div>
-            <Skeleton className="skeleton-title" width="280px" style={{ marginBottom: "var(--space-3)" }} />
+            <Skeleton className="skeleton-title" width="280px" style={{ marginBottom: "8px" }} />
             <Skeleton className="skeleton-text" width="340px" />
           </div>
-          <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            <Skeleton width="180px" height="38px" borderRadius="var(--radius-md)" />
-            <Skeleton width="160px" height="38px" borderRadius="var(--radius-md)" />
+          <div style={{ display: "flex", gap: "10px" }}>
+            <Skeleton width="160px" height="36px" borderRadius="var(--radius-md)" />
+            <Skeleton width="140px" height="36px" borderRadius="var(--radius-md)" />
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} className="design-card" style={{ minHeight: "220px" }}>
-              <Skeleton className="skeleton-title" width="70%" style={{ marginBottom: "var(--space-4)" }} />
-              <Skeleton className="skeleton-text" width="50%" style={{ marginBottom: "var(--space-6)" }} />
+            <SkeletonCard key={i} className="design-card" style={{ height: "220px" }}>
+              <Skeleton className="skeleton-title" width="70%" style={{ marginBottom: "12px" }} />
+              <Skeleton className="skeleton-text" width="50%" style={{ marginBottom: "20px" }} />
               <Skeleton height="6px" />
             </SkeletonCard>
           ))}
         </div>
       </div>
+
     );
   }
 
-  // ERROR STATE
   if (error && !shelfDetail) {
     return (
-      <div style={{ padding: "var(--space-6) 0" }}>
-        <Link href="/shelves" style={{ color: "var(--color-accent-primary)", textDecoration: "none", fontSize: "var(--font-size-2xl)", fontWeight: 600, display: "inline-block", marginBottom: "var(--space-4)" }}>
+      <div style={{ padding: "16px 0" }}>
+        <Link href="/shelves" className="btn btn-ghost btn-xs" style={{ marginBottom: "16px" }}>
           ← Back to Shelves
         </Link>
         <ErrorBanner message={error || "Shelf not found."} onRetry={loadShelf} />
@@ -200,87 +208,115 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
     (b) => !shelfDetail.books.some((sb) => sb.id === b.id)
   );
 
-  const getRoleBadgeColor = (role: ShelfRole) => {
+  const filteredAvailableBooks = booksNotOnShelf.filter(
+    (b) =>
+      b.title.toLowerCase().includes(bookSearch.toLowerCase()) ||
+      b.author.toLowerCase().includes(bookSearch.toLowerCase())
+  );
+
+  const getRoleExplanation = (role: ShelfRole) => {
     switch (role) {
       case "OWNER":
-        return "#8b5cf6"; // purple
+        return "👑 Full Control: You can rename/delete this shelf, invite/remove collaborators, and add/remove books.";
       case "EDITOR":
-        return "#00c2ff"; // cyan
+        return "✏️ Editor Permissions: You can add and remove books from this shelf. (Shelf settings and collaborators are managed by the Owner).";
       case "VIEWER":
       default:
-        return "#10b981"; // green
+        return "👁️ Viewer Permissions: You have read-only access to browse books on this shared shelf.";
     }
   };
 
   return (
-    <div style={{ padding: "var(--space-6) 0" }}>
-      <Link href="/shelves" style={{ color: "var(--color-accent-primary)", textDecoration: "none", fontSize: "var(--font-size-2xl)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+    <div style={{ padding: "8px 0" }}>
+      <Link href="/shelves" className="btn btn-ghost btn-xs" style={{ color: "var(--color-accent-primary)", marginBottom: "16px", paddingLeft: 0 }}>
         ← Back to Shelves
       </Link>
 
       {error && (
-        <div style={{ marginBottom: "var(--space-5)" }}>
+        <div style={{ marginBottom: "16px" }}>
           <ErrorBanner message={error} onRetry={loadShelf} />
         </div>
       )}
 
+      {/* Header & Role Controls */}
       <div
+        className="design-card"
         style={{
+          padding: "24px 28px",
+          marginBottom: "24px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
-          margin: "var(--space-4) 0 var(--space-8) 0",
           flexWrap: "wrap",
-          gap: "var(--space-6)",
+          gap: "16px",
+          background: "linear-gradient(135deg, rgba(17, 29, 51, 0.9) 0%, rgba(13, 21, 36, 0.95) 100%)",
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", flexWrap: "wrap" }}>
-            <h2 style={{ fontSize: "var(--font-size-h1)", color: "var(--color-text-tertiary)", fontWeight: "700", letterSpacing: "-0.02em" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
+            <h1 style={{ fontSize: "24px", color: "#ffffff", fontWeight: 800, letterSpacing: "-0.02em" }}>
               📁 {shelfDetail.name}
-            </h2>
+            </h1>
             <span
-              style={{
-                fontSize: "var(--font-size-lg)",
-                fontWeight: 700,
-                padding: "var(--space-1) var(--space-3)",
-                borderRadius: "var(--radius-full)",
-                background: `${getRoleBadgeColor(userRole)}18`,
-                color: getRoleBadgeColor(userRole),
-                border: `1px solid ${getRoleBadgeColor(userRole)}50`,
-                letterSpacing: "0.02em",
-              }}
+              className={`badge ${userRole === "OWNER" ? "badge-owner" : userRole === "EDITOR" ? "badge-editor" : "badge-viewer"}`}
             >
               Role: {userRole}
             </span>
           </div>
+
           {shelfDetail.description && (
-            <p style={{ color: "var(--color-text-primary)", marginTop: "var(--space-2)", fontSize: "var(--font-size-3xl)" }}>
+            <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", marginBottom: "10px" }}>
               {shelfDetail.description}
             </p>
           )}
+
+          {/* RBAC Explanation Banner */}
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px 10px",
+              borderRadius: "var(--radius-sm)",
+              background: "rgba(255, 255, 255, 0.04)",
+              border: "1px solid var(--color-border-subtle)",
+              fontSize: "12px",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            <span>🛡️</span>
+            <span>{getRoleExplanation(userRole)}</span>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
           {isOwner && (
             <button
               onClick={() => setIsShareOpen((prev) => !prev)}
-              className="btn btn-secondary"
+              className="btn btn-secondary btn-sm"
             >
-              👥 Manage Collaborators
+              👥 Manage Collaborators ({collaborators.length})
             </button>
           )}
 
-          {canEditBooks && (
+          {canEditBooks ? (
             <button
               onClick={() => {
                 loadAvailableBooks();
                 setIsAddBookOpen(true);
               }}
-              className="btn btn-primary"
+              className="btn btn-primary btn-sm"
             >
-              + Add Book to Shelf
+              <span>+</span> Add Book to Shelf
             </button>
+          ) : (
+            <span
+              className="btn btn-ghost btn-sm"
+              style={{ border: "1px dashed var(--color-border-default)", opacity: 0.7, cursor: "not-allowed" }}
+              title="Viewers have read-only access enforced by FastAPI RBAC"
+            >
+              🔒 View-only access
+            </span>
           )}
         </div>
       </div>
@@ -290,23 +326,28 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
         <div
           className="design-card"
           style={{
-            padding: "var(--space-6)",
-            marginBottom: "var(--space-8)",
+            padding: "24px",
+            marginBottom: "24px",
+            background: "#0c1527",
+            border: "1px solid rgba(56, 189, 248, 0.3)",
           }}
         >
-          <h3 style={{ fontSize: "var(--font-size-h3)", marginBottom: "var(--space-4)", color: "var(--color-text-tertiary)", fontWeight: 600 }}>
-            Shelf Collaborators & RBAC
-          </h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <h3 style={{ fontSize: "16px", color: "#ffffff", fontWeight: 700 }}>
+              👥 Shelf Collaborators & RBAC Control
+            </h3>
+            <span style={{ fontSize: "12px", color: "var(--color-text-muted)" }}>Enforced by backend RBAC router</span>
+          </div>
 
           {/* Form to invite collaborator */}
           <form
             onSubmit={handleAddCollaborator}
-            style={{ display: "flex", gap: "var(--space-3)", marginBottom: "var(--space-6)", flexWrap: "wrap" }}
+            style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap" }}
           >
             <input
               type="email"
               required
-              placeholder="User email to invite..."
+              placeholder="Enter user email (e.g. bob@example.com)..."
               value={collabEmail}
               onChange={(e) => setCollabEmail(e.target.value)}
               className="input-field"
@@ -321,86 +362,101 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
               <option value="VIEWER">Viewer (Read-only)</option>
               <option value="EDITOR">Editor (Add/Remove Books)</option>
             </select>
-            <button
-              type="submit"
-              disabled={actionLoading}
-              className="btn btn-primary"
-            >
-              {actionLoading ? <Spinner /> : null}
-              {actionLoading ? "Inviting..." : "Invite"}
+            <button type="submit" disabled={actionLoading} className="btn btn-primary btn-sm">
+              {actionLoading ? <Spinner /> : "Invite Collaborator"}
             </button>
           </form>
 
+          {/* Quick Demo Recipient Suggestions */}
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", marginBottom: "20px" }}>
+            <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>Quick Demo Invites:</span>
+            <button
+              type="button"
+              onClick={() => {
+                setCollabEmail("bob@example.com");
+                setCollabRole("EDITOR");
+              }}
+              className="btn btn-secondary btn-xs"
+            >
+              ✏️ Bob (as Editor)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCollabEmail("charlie@example.com");
+                setCollabRole("VIEWER");
+              }}
+              className="btn btn-secondary btn-xs"
+            >
+              👁️ Charlie (as Viewer)
+            </button>
+          </div>
+
           {/* Collaborator List */}
           {collaborators.length === 0 ? (
-            <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)" }}>
-              No collaborators added to this shelf yet.
+            <p style={{ color: "var(--color-text-secondary)", fontSize: "13px" }}>
+              No collaborators added to this shelf yet. Invite other registered users to share collection access.
             </p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {collaborators.map((c) => (
-                <div
-                  key={c.userId}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "var(--space-3) var(--space-4)",
-                    background: "var(--color-surface-base)",
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--color-border-default)",
-                    flexWrap: "wrap",
-                    gap: "var(--space-3)",
-                  }}
-                >
-                  <div>
-                    <span style={{ fontWeight: 600, color: "var(--color-text-tertiary)", fontSize: "var(--font-size-2xl)" }}>{c.name}</span>{" "}
-                    <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-xl)" }}>({c.email})</span>
-                  </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {collaborators.map((c) => {
+                const collabUserId = (c.user_id || c.userId || c.email) as string;
+                return (
+                  <div
+                    key={collabUserId}
+                    className="glass-panel"
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "10px 14px",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>{c.name}</span>
+                      <span style={{ color: "var(--color-text-secondary)", fontSize: "12px" }}>({c.email})</span>
+                    </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                    <select
-                      value={c.role}
-                      onChange={(e) => handleUpdateCollaboratorRole(c.userId, e.target.value as ShelfRole)}
-                      className="input-field"
-                      style={{ width: "auto", padding: "var(--space-1) var(--space-3)", fontSize: "var(--font-size-xl)" }}
-                    >
-                      <option value="VIEWER">VIEWER</option>
-                      <option value="EDITOR">EDITOR</option>
-                    </select>
-
-                    {confirmRemoveCollabId === c.userId ? (
-                      <div style={{ display: "flex", gap: "var(--space-1)" }}>
-                        <button
-                          onClick={() => handleRemoveCollaborator(c.userId)}
-                          disabled={removingCollabId === c.userId}
-                          className="btn btn-danger btn-sm"
-                        >
-                          {removingCollabId === c.userId ? <Spinner /> : null}
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setConfirmRemoveCollabId(null)}
-                          className="btn btn-ghost btn-sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmRemoveCollabId(c.userId)}
-                        className="btn btn-danger btn-sm"
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <select
+                        value={c.role}
+                        onChange={(e) => handleUpdateCollaboratorRole(collabUserId, e.target.value as ShelfRole)}
+                        className="input-field"
+                        style={{ width: "auto", padding: "3px 8px", fontSize: "12px" }}
                       >
-                        Remove
-                      </button>
-                    )}
+                        <option value="VIEWER">VIEWER</option>
+                        <option value="EDITOR">EDITOR</option>
+                      </select>
+
+                      {confirmRemoveCollabId === collabUserId ? (
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          <button
+                            onClick={() => handleRemoveCollaborator(collabUserId)}
+                            disabled={removingCollabId === collabUserId}
+                            className="btn btn-danger btn-xs"
+                          >
+                            {removingCollabId === collabUserId ? <Spinner /> : "Confirm"}
+                          </button>
+                          <button onClick={() => setConfirmRemoveCollabId(null)} className="btn btn-ghost btn-xs">
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmRemoveCollabId(collabUserId)} className="btn btn-danger btn-xs">
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       )}
+
 
       {/* Books Grid */}
       {shelfDetail.books.length === 0 ? (
@@ -409,25 +465,37 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
             textAlign: "center",
             padding: "4rem 1rem",
             background: "var(--color-surface-raised)",
-            borderRadius: "var(--radius-md)",
+            borderRadius: "var(--radius-lg)",
             border: "1px dashed var(--color-border-default)",
           }}
         >
-          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "0.5rem", fontWeight: 600 }}>
-            This shelf is empty.
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>📂</div>
+          <p style={{ fontSize: "18px", color: "#ffffff", marginBottom: "6px", fontWeight: 700 }}>
+            This shelf is empty
           </p>
-          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)" }}>
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", marginBottom: "16px" }}>
             {canEditBooks
-              ? "Add books from your library to keep them organized on this shelf."
+              ? "Add books from your library to organize and share this collection."
               : "No books have been added to this shared shelf yet."}
           </p>
+          {canEditBooks && (
+            <button
+              onClick={() => {
+                loadAvailableBooks();
+                setIsAddBookOpen(true);
+              }}
+              className="btn btn-primary btn-sm"
+            >
+              + Add First Book
+            </button>
+          )}
         </div>
       ) : (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "1.25rem",
+            gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
+            gap: "20px",
           }}
         >
           {shelfDetail.books.map((book) => (
@@ -435,83 +503,70 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
               key={book.id}
               book={book}
               onEdit={() => {}}
-              onDelete={canEditBooks ? handleRemoveBook : () => setError("Viewers cannot remove books.")}
+              onDelete={canEditBooks ? handleRemoveBook : () => toastError("Forbidden", "Viewers cannot remove books.")}
             />
           ))}
         </div>
       )}
 
-      {/* Modal to add existing book */}
+      {/* Visual Add Book to Shelf Modal */}
       {isAddBookOpen && canEditBooks && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.85)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 50,
-            padding: "1rem",
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsAddBookOpen(false);
-          }}
-        >
-          <div
-            className="design-card"
-            style={{
-              width: "100%",
-              maxWidth: "480px",
-              padding: "var(--space-8)",
-              boxShadow: "var(--shadow-3)",
-            }}
-          >
-            <h3 style={{ fontSize: "var(--font-size-h2)", marginBottom: "var(--space-4)", color: "var(--color-text-tertiary)", fontWeight: 700 }}>
-              Add Book to {shelfDetail.name}
-            </h3>
+        <div className="modal-backdrop" onClick={() => setIsAddBookOpen(false)}>
+          <div className="modal-content" style={{ padding: "24px", maxWidth: "560px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 800, color: "#ffffff" }}>
+                Add Books to &quot;{shelfDetail.name}&quot;
+              </h3>
+              <button onClick={() => setIsAddBookOpen(false)} className="btn btn-ghost btn-xs">✕</button>
+            </div>
 
             {booksNotOnShelf.length === 0 ? (
-              <p style={{ color: "var(--color-text-secondary)", marginBottom: "var(--space-6)", fontSize: "var(--font-size-3xl)" }}>
+              <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", padding: "20px 0", textAlign: "center" }}>
                 All available library books are already on this shelf!
               </p>
             ) : (
-              <div style={{ marginBottom: "var(--space-6)" }}>
-                <label className="form-label">
-                  Select Book
-                </label>
-                <select
-                  value={selectedBookId}
-                  onChange={(e) => setSelectedBookId(e.target.value)}
+              <div>
+                <input
+                  type="text"
+                  placeholder="🔍 Search available books by title or author..."
+                  value={bookSearch}
+                  onChange={(e) => setBookSearch(e.target.value)}
                   className="input-field"
-                >
-                  <option value="">Select a book...</option>
-                  {booksNotOnShelf.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.title} by {b.author}
-                    </option>
+                  style={{ marginBottom: "14px" }}
+                />
+
+                <div style={{ maxHeight: "280px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {filteredAvailableBooks.map((b) => (
+                    <div
+                      key={b.id}
+                      className="glass-panel"
+                      style={{
+                        padding: "10px 14px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 600, color: "#ffffff", fontSize: "14px" }}>{b.title}</div>
+                        <div style={{ color: "var(--color-text-secondary)", fontSize: "12px" }}>by {b.author}</div>
+                      </div>
+                      <button
+                        onClick={() => handleAddBook(b.id)}
+                        disabled={actionLoading}
+                        className="btn btn-primary btn-xs"
+                      >
+                        + Add to Shelf
+                      </button>
+                    </div>
                   ))}
-                </select>
+                </div>
               </div>
             )}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)" }}>
-              <button
-                type="button"
-                onClick={() => setIsAddBookOpen(false)}
-                className="btn btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!selectedBookId || actionLoading}
-                onClick={handleAddBook}
-                className="btn btn-primary"
-              >
-                {actionLoading ? <Spinner /> : null}
-                {actionLoading ? "Adding..." : "Add Book"}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
+              <button onClick={() => setIsAddBookOpen(false)} className="btn btn-ghost btn-sm">
+                Done
               </button>
             </div>
           </div>
@@ -520,3 +575,4 @@ export function ShelfDetailView({ shelfId }: ShelfDetailProps) {
     </div>
   );
 }
+

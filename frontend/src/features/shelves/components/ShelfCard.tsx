@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Shelf } from "@/types";
-import { Spinner } from "@/components/ui";
+import { Spinner, useToast } from "@/components/ui";
 
 interface ShelfCardProps {
   shelf: Shelf;
@@ -12,21 +12,22 @@ interface ShelfCardProps {
 }
 
 export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
+  const { success, error: toastError } = useToast();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const userRole = shelf.userRole || (shelf as any).user_role || "OWNER";
   const isOwner = userRole === "OWNER";
 
-  const getRoleBadgeColor = (role: string) => {
+  const getRoleBadge = (role: string) => {
     switch (role) {
       case "OWNER":
-        return "#8b5cf6"; // purple
+        return <span className="badge badge-owner">Owner 👑</span>;
       case "EDITOR":
-        return "#00c2ff"; // cyan
+        return <span className="badge badge-editor">Editor ✏️</span>;
       case "VIEWER":
       default:
-        return "#10b981"; // green
+        return <span className="badge badge-viewer">Viewer 👁️</span>;
     }
   };
 
@@ -34,6 +35,9 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
     setDeleting(true);
     try {
       await onDelete(shelf.id);
+      success(`Deleted shelf "${shelf.name}"`);
+    } catch (err) {
+      toastError("Failed to delete shelf", err instanceof Error ? err.message : "Error");
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
@@ -44,50 +48,36 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
     <div
       className="design-card"
       style={{
-        padding: "var(--space-6)",
+        padding: "20px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        gap: "var(--space-5)",
+        gap: "16px",
+        background: "linear-gradient(180deg, #111d33 0%, #0d1524 100%)",
       }}
     >
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "var(--space-2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
           <Link
             href={`/shelves/${shelf.id}`}
             style={{
-              fontSize: "var(--font-size-h3)",
+              fontSize: "18px",
               fontWeight: 700,
-              color: "var(--color-text-tertiary)",
-              textDecoration: "none",
+              color: "#ffffff",
               letterSpacing: "-0.01em",
             }}
           >
             📁 {shelf.name}
           </Link>
-          <span
-            style={{
-              fontSize: "var(--font-size-sm)",
-              fontWeight: 700,
-              padding: "2px 8px",
-              borderRadius: "var(--radius-full)",
-              background: `${getRoleBadgeColor(userRole)}18`,
-              color: getRoleBadgeColor(userRole),
-              border: `1px solid ${getRoleBadgeColor(userRole)}50`,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {userRole}
-          </span>
+          {getRoleBadge(userRole)}
         </div>
+
         {shelf.description && (
           <p
             style={{
               color: "var(--color-text-secondary)",
-              fontSize: "var(--font-size-2xl)",
-              marginTop: "var(--space-2)",
+              fontSize: "13px",
+              marginTop: "8px",
               lineHeight: 1.5,
             }}
           >
@@ -96,40 +86,48 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
         )}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--color-border-muted)", paddingTop: "var(--space-4)" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          borderTop: "1px solid var(--color-border-subtle)",
+          paddingTop: "12px",
+          marginTop: "auto",
+        }}
+      >
         <Link
           href={`/shelves/${shelf.id}`}
+          className="btn btn-ghost btn-xs"
           style={{
-            fontSize: "var(--font-size-2xl)",
             color: "var(--color-accent-primary)",
-            textDecoration: "none",
             fontWeight: 600,
-            transition: "all var(--motion-fast)",
+            paddingLeft: 0,
           }}
         >
           View Shelf & Books →
         </Link>
+
         {isOwner && (
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", gap: "4px" }}>
             <button
               onClick={() => onEdit(shelf)}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-xs"
             >
               Edit
             </button>
             {confirmDelete ? (
-              <div style={{ display: "flex", gap: "var(--space-1)" }}>
+              <div style={{ display: "flex", gap: "4px" }}>
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="btn btn-danger btn-sm"
+                  className="btn btn-danger btn-xs"
                 >
-                  {deleting ? <Spinner /> : null}
-                  {deleting ? "Deleting..." : "Confirm?"}
+                  {deleting ? <Spinner /> : "Confirm?"}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="btn btn-ghost btn-sm"
+                  className="btn btn-ghost btn-xs"
                 >
                   Cancel
                 </button>
@@ -137,7 +135,7 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="btn btn-danger btn-sm"
+                className="btn btn-danger btn-xs"
               >
                 Delete
               </button>
@@ -148,3 +146,4 @@ export function ShelfCard({ shelf, onEdit, onDelete }: ShelfCardProps) {
     </div>
   );
 }
+

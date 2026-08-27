@@ -2,6 +2,25 @@ import { getAccessToken } from "@/lib/api/client";
 
 type EventCallback = (eventData: any) => void;
 
+function getWsBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    // On any non-localhost host (production domain), auto-detect secure/standard WebSocket origin
+    if (hostname !== "localhost" && hostname !== "127.0.0.1") {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      return `${protocol}//${window.location.host}/api/v1`;
+    }
+  }
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+  if (typeof window !== "undefined") {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${window.location.host}/api/v1`;
+  }
+  return "ws://localhost:8001/api/v1";
+}
+
 class WebSocketClient {
   private socket: WebSocket | null = null;
   private listeners: Set<EventCallback> = new Set();
@@ -19,17 +38,8 @@ class WebSocketClient {
       return;
     }
 
-    let baseUrl = process.env.NEXT_PUBLIC_WS_URL;
-    if (!baseUrl) {
-      if (typeof window !== "undefined") {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        baseUrl = `${protocol}//${window.location.host}/api/v1`;
-      } else {
-        baseUrl = "ws://localhost:8001/api/v1";
-      }
-    }
+    const baseUrl = getWsBaseUrl();
     const wsUrl = `${baseUrl}/ws?token=${encodeURIComponent(token)}`;
-
 
     this.isConnecting = true;
 

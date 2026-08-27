@@ -2,25 +2,35 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/features/auth";
-import { Spinner } from "@/components/ui";
+import { Spinner, useToast } from "@/components/ui";
 
 export function Navbar() {
   const { user, login, logout } = useAuth();
   const pathname = usePathname();
-  const [authError, setAuthError] = useState<string | null>(null);
+  const { success, error: toastError } = useToast();
+
   const [submitting, setSubmitting] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const handleDemoLogin = async (demoEmail: string) => {
-    setAuthError(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+
+  const handleDemoLogin = async (demoEmail: string, personaName: string) => {
     setSubmitting(true);
+    setPersonaDropdownOpen(false);
+    setMobileOpen(false);
     try {
       await login(demoEmail, "Password123!");
-      setMobileOpen(false);
+      success(`Switched persona to ${personaName}`, `Logged in as ${demoEmail}`);
     } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Login failed");
+      toastError("Failed to switch persona", err instanceof Error ? err.message : "Authentication failed");
     } finally {
       setSubmitting(false);
     }
@@ -34,216 +44,328 @@ export function Navbar() {
     { href: "/activity", label: "Activity" },
   ];
 
+  const getPersonaRole = (email?: string) => {
+    if (email === "alice@example.com") return { role: "Owner 👑", color: "badge-owner" };
+    if (email === "bob@example.com") return { role: "Editor / Borrower ✏️", color: "badge-editor" };
+    if (email === "charlie@example.com") return { role: "Viewer 👁️", color: "badge-viewer" };
+    return { role: "Member", color: "badge-reading" };
+  };
+
   return (
-    <header
-      style={{
-        borderBottom: "1px solid var(--color-border-default)",
-        background: "rgba(14, 45, 73, 0.95)",
-        backdropFilter: "blur(12px)",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        boxShadow: "var(--shadow-1)",
-      }}
-    >
-      <div
+    <>
+      <header
         style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "var(--space-4) var(--space-8)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "var(--space-6)",
+          borderBottom: "1px solid var(--color-border-default)",
+          background: "rgba(13, 21, 36, 0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          boxShadow: "0 4px 20px -2px rgba(0, 0, 0, 0.5)",
         }}
       >
-        {/* Brand */}
-        <Link
-          href="/"
+        <div
           style={{
+            maxWidth: "1240px",
+            margin: "0 auto",
+            padding: "0.75rem 1.5rem",
             display: "flex",
             alignItems: "center",
-            gap: "var(--space-3)",
-            fontSize: "var(--font-size-h3)",
-            fontWeight: "700",
-            color: "var(--color-text-tertiary)",
-            textDecoration: "none",
-            letterSpacing: "-0.02em",
+            justifyContent: "space-between",
+            gap: "1.5rem",
           }}
         >
-          <span style={{ fontSize: "1.4rem", filter: "drop-shadow(0 0 8px rgba(0, 194, 255, 0.4))" }}>📚</span>
-          <span>Book<span style={{ color: "var(--color-accent-primary)" }}>Nest</span></span>
-        </Link>
+          {/* Brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+            <Link
+              href="/"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                fontSize: "1.25rem",
+                fontWeight: "800",
+                color: "#ffffff",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              <span style={{ fontSize: "1.35rem", filter: "drop-shadow(0 0 10px rgba(56, 189, 248, 0.6))" }}>📚</span>
+              <span>Book<span style={{ color: "var(--color-accent-primary)" }}>Nest</span></span>
+            </Link>
 
-        {/* Desktop Nav Links */}
-        <nav className="nav-desktop-links" style={{ display: "flex", gap: "var(--space-7)", alignItems: "center" }}>
+            {/* Live Real-Time WebSocket HUD */}
+            <div
+              title="Real-Time WebSocket Gateway Active (Authenticated Room Subscriptions)"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "3px 8px",
+                borderRadius: "var(--radius-full)",
+                background: "rgba(16, 185, 129, 0.1)",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                fontSize: "11px",
+                fontWeight: 600,
+                color: "#34d399",
+              }}
+            >
+              <span className="pulse-dot pulse-dot-green" style={{ width: "6px", height: "6px" }} />
+              <span>WS Live</span>
+            </div>
+          </div>
+
+          {/* Desktop Nav Links */}
+          <nav className="nav-desktop-links" style={{ display: "flex", gap: "0.25rem", alignItems: "center" }}>
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`nav-link ${isActive ? "nav-link-active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                  style={{
+                    color: isActive ? "var(--color-accent-primary)" : "var(--color-text-secondary)",
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: "14px",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Desktop Auth & Evaluation Controls */}
+          <div className="nav-desktop-auth" style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            {mounted && user ? (
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", position: "relative" }}>
+                {/* 1-Click Persona Switcher Dropdown */}
+                <div style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setPersonaDropdownOpen(!personaDropdownOpen)}
+                    className="btn btn-secondary btn-sm"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      background: "rgba(17, 29, 51, 0.9)",
+                      border: "1px solid rgba(56, 189, 248, 0.3)",
+                      borderRadius: "var(--radius-full)",
+                      padding: "4px 12px",
+                    }}
+                    title="Switch evaluation persona"
+                  >
+                    <span style={{ fontSize: "13px" }}>👤</span>
+                    <span style={{ fontWeight: 600, color: "#ffffff", fontSize: "13px" }}>{user.name}</span>
+                    <span className={`badge ${getPersonaRole(user.email).color}`} style={{ fontSize: "10px", padding: "1px 6px" }}>
+                      {getPersonaRole(user.email).role.split(" ")[0]}
+                    </span>
+                    <span style={{ fontSize: "10px", color: "var(--color-text-muted)" }}>▼</span>
+                  </button>
+
+                  {personaDropdownOpen && (
+                    <div
+                      className="design-card"
+                      style={{
+                        position: "absolute",
+                        top: "110%",
+                        right: 0,
+                        width: "260px",
+                        background: "#0c1527",
+                        border: "1px solid rgba(56, 189, 248, 0.3)",
+                        boxShadow: "0 10px 30px -4px rgba(0,0,0,0.8)",
+                        padding: "8px",
+                        zIndex: 200,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--color-text-muted)", padding: "4px 8px", textTransform: "uppercase" }}>
+                        Evaluation Personas
+                      </div>
+                      
+                      <button
+                        onClick={() => handleDemoLogin("alice@example.com", "Alice (Owner)")}
+                        disabled={submitting}
+                        className="btn btn-ghost btn-xs"
+                        style={{ justifyContent: "flex-start", padding: "6px 8px", textAlign: "left", width: "100%" }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ color: "#fde047", fontWeight: 700 }}>👑 Alice</span>
+                            <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>(Owner)</span>
+                          </div>
+                          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>Library owner & shelf admin</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleDemoLogin("bob@example.com", "Bob (Editor/Borrower)")}
+                        disabled={submitting}
+                        className="btn btn-ghost btn-xs"
+                        style={{ justifyContent: "flex-start", padding: "6px 8px", textAlign: "left", width: "100%" }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ color: "#7dd3fc", fontWeight: 700 }}>✏️ Bob</span>
+                            <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>(Editor / Borrower)</span>
+                          </div>
+                          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>Editor on Tech Classics, borrower</span>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => handleDemoLogin("charlie@example.com", "Charlie (Viewer)")}
+                        disabled={submitting}
+                        className="btn btn-ghost btn-xs"
+                        style={{ justifyContent: "flex-start", padding: "6px 8px", textAlign: "left", width: "100%" }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ color: "#cbd5e1", fontWeight: 700 }}>👁️ Charlie</span>
+                            <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>(Viewer)</span>
+                          </div>
+                          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>Read-only viewer on shared shelves</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => {
+                    logout();
+                    setPersonaDropdownOpen(false);
+                  }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: "var(--color-text-muted)" }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <Link href="/login" className="btn btn-ghost btn-sm">
+                  Sign In
+                </Link>
+                <Link href="/signup" className="btn btn-primary btn-sm">
+                  Create Account
+                </Link>
+                <div style={{ width: "1px", height: "18px", background: "var(--color-border-default)", margin: "0 2px" }} />
+                <button
+                  onClick={() => handleDemoLogin("alice@example.com", "Alice (Owner)")}
+                  disabled={submitting}
+                  className="btn btn-secondary btn-sm"
+                  title="Quick 1-click login as Alice (Owner)"
+                >
+                  {submitting ? <Spinner /> : "👑"} Demo: Alice
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Hamburger Toggle */}
+          <button
+            className="nav-hamburger"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle Navigation Menu"
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? "✕" : "☰"}
+          </button>
+        </div>
+
+        {/* Mobile Dropdown Menu */}
+        <div className={`nav-mobile-menu ${mobileOpen ? "open" : ""}`}>
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`nav-link ${isActive ? "nav-link-active" : ""}`}
-                aria-current={isActive ? "page" : undefined}
+                onClick={() => setMobileOpen(false)}
                 style={{
-                  color: isActive ? "var(--color-text-tertiary)" : "var(--color-text-primary)",
-                  textDecoration: "none",
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: "var(--font-size-4xl)",
-                  transition: "color var(--motion-fast)",
+                  color: isActive ? "var(--color-accent-primary)" : "var(--color-text-primary)",
+                  fontSize: "15px",
+                  fontWeight: isActive ? 700 : 500,
+                  padding: "6px 0",
                 }}
               >
                 {link.label}
               </Link>
             );
           })}
-        </nav>
 
-        {/* Desktop User Auth Section */}
-        <div className="nav-desktop-auth" style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          {authError && (
-            <span style={{ color: "var(--color-error)", fontSize: "var(--font-size-xl)", marginRight: "var(--space-2)" }}>
-              {authError}
-            </span>
-          )}
-          {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "var(--space-2)",
-                  background: "var(--color-accent-bg)",
-                  border: "1px solid var(--color-border-muted)",
-                  padding: "var(--space-2) var(--space-4)",
-                  borderRadius: "var(--radius-full)",
-                  fontSize: "var(--font-size-2xl)",
-                  color: "var(--color-text-tertiary)",
-                  fontWeight: 600,
-                }}
-              >
-                <span style={{ color: "var(--color-accent-primary)" }}>👤</span>
-                <span>{user.name}</span>
+          <div style={{ borderTop: "1px solid var(--color-border-default)", paddingTop: "12px", marginTop: "8px" }}>
+
+            {mounted && user ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#ffffff", fontSize: "14px", fontWeight: 600 }}>
+                    👤 {user.name} ({getPersonaRole(user.email).role})
+                  </span>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileOpen(false);
+                    }}
+                    className="btn btn-ghost btn-sm"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                  <button onClick={() => handleDemoLogin("alice@example.com", "Alice")} className="btn btn-secondary btn-xs">
+                    👑 Alice
+                  </button>
+                  <button onClick={() => handleDemoLogin("bob@example.com", "Bob")} className="btn btn-secondary btn-xs">
+                    ✏️ Bob
+                  </button>
+                  <button onClick={() => handleDemoLogin("charlie@example.com", "Charlie")} className="btn btn-secondary btn-xs">
+                    👁️ Charlie
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => logout()}
-                className="btn btn-ghost btn-sm"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-              <Link href="/login" className="btn btn-ghost btn-sm">
-                Sign In
-              </Link>
-              <Link href="/signup" className="btn btn-primary btn-sm">
-                Create Account
-              </Link>
-              <div style={{ width: "1px", height: "20px", background: "var(--color-border-muted)", margin: "0 var(--space-1)" }} />
-              <button
-                onClick={() => handleDemoLogin("alice@example.com")}
-                disabled={submitting}
-                className="btn btn-secondary btn-sm"
-                title="Quick login as Alice Owner"
-              >
-                {submitting ? <Spinner /> : null} Demo: Alice
-              </button>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ textAlign: "center" }}
+                  >
+                    Sign In
 
-        {/* Mobile Hamburger Toggle */}
-        <button
-          className="nav-hamburger"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle Navigation Menu"
-          aria-expanded={mobileOpen}
-        >
-          {mobileOpen ? "✕" : "☰"}
-        </button>
-      </div>
-
-      {/* Mobile Dropdown Menu */}
-      <div className={`nav-mobile-menu ${mobileOpen ? "open" : ""}`}>
-        {navLinks.map((link) => {
-          const isActive = pathname === link.href;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              style={{
-                color: isActive ? "var(--color-accent-primary)" : "var(--color-text-tertiary)",
-                fontSize: "var(--font-size-2xl)",
-                fontWeight: isActive ? 700 : 500,
-                padding: "var(--space-2) 0",
-              }}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-
-        <div style={{ borderTop: "1px solid var(--color-border-default)", paddingTop: "var(--space-4)", marginTop: "var(--space-2)" }}>
-          {authError && (
-            <p style={{ color: "var(--color-error)", fontSize: "var(--font-size-xl)", marginBottom: "var(--space-2)" }}>
-              {authError}
-            </p>
-          )}
-          {user ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: "var(--color-text-tertiary)", fontSize: "var(--font-size-2xl)" }}>
-                👤 {user.name}
-              </span>
-              <button
-                onClick={() => {
-                  logout();
-                  setMobileOpen(false);
-                }}
-                className="btn btn-ghost btn-sm"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="btn btn-ghost btn-sm"
-                  style={{ textAlign: "center" }}
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileOpen(false)}
+                    className="btn btn-primary btn-sm"
+                    style={{ textAlign: "center" }}
+                  >
+                    Create Account
+                  </Link>
+                </div>
+                <button
+                  onClick={() => handleDemoLogin("alice@example.com", "Alice")}
+                  disabled={submitting}
+                  className="btn btn-secondary btn-sm"
                 >
-                  Sign In
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={() => setMobileOpen(false)}
-                  className="btn btn-primary btn-sm"
-                  style={{ textAlign: "center" }}
-                >
-                  Create Account
-                </Link>
+                  {submitting ? <Spinner /> : "👑"} Sign in as Alice (Owner)
+                </button>
               </div>
-              <button
-                onClick={() => handleDemoLogin("alice@example.com")}
-                disabled={submitting}
-                className="btn btn-secondary btn-sm"
-              >
-                {submitting ? <Spinner /> : null} Sign in as Alice (Owner)
-              </button>
-              <button
-                onClick={() => handleDemoLogin("bob@example.com")}
-                disabled={submitting}
-                className="btn btn-secondary btn-sm"
-              >
-                {submitting ? <Spinner /> : null} Sign in as Bob (Borrower)
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }
+
+

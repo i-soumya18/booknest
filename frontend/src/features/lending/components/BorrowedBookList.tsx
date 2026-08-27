@@ -4,9 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { BorrowedBook, PaginatedResponse } from "@/types";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { getBorrowedBooks } from "../api";
-import { Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
+import { Skeleton, SkeletonCard, ErrorBanner, useToast } from "@/components/ui";
 
 export function BorrowedBookList() {
+  const { toast } = useToast();
   const [data, setData] = useState<PaginatedResponse<BorrowedBook> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,21 +35,55 @@ export function BorrowedBookList() {
       (event: any) => {
         if (event.event_type === "BOOK_LENT" || event.event_type === "BOOK_RETURNED") {
           fetchBooks();
+          toast({
+            title: "⚡ Lending Status Updated",
+            description: `Event: ${event.event_type}`,
+            type: "info",
+          });
         }
       },
-      [fetchBooks]
+      [fetchBooks, toast]
     )
   );
 
   return (
-    <div style={{ padding: "var(--space-6) 0" }}>
-      <div className="section-header">
-        <h1>🤝 Borrowed Books</h1>
-        <p>Books lent to you by other users. Borrowed books are read-only.</p>
+    <div style={{ padding: "8px 0" }}>
+      {/* Header */}
+      <div
+        className="design-card"
+        style={{
+          padding: "24px 28px",
+          marginBottom: "24px",
+          background: "linear-gradient(135deg, rgba(17, 29, 51, 0.9) 0%, rgba(13, 21, 36, 0.95) 100%)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+          <span style={{ fontSize: "20px" }}>🤝</span>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em" }}>
+            Borrowed Books
+          </h1>
+          <span className="badge badge-lent">Read-Only View</span>
+        </div>
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", marginBottom: "14px" }}>
+          Books lent to your account by other users. You have read-only visibility into book pages and notes while ownership remains with the lender.
+        </p>
+
+        {/* Architectural Concurrency Callout */}
+        <div
+          className="glass-panel"
+          style={{
+            padding: "10px 14px",
+            fontSize: "12px",
+            color: "var(--color-text-secondary)",
+            borderLeft: "3px solid #38bdf8",
+          }}
+        >
+          <strong style={{ color: "#38bdf8" }}>🔒 Concurrency & Integrity:</strong> Books cannot be double-lent under concurrent requests. The PostgreSQL partial index <code>UNIQUE(book_id) WHERE returned_at IS NULL</code> guarantees single active borrower state.
+        </div>
       </div>
 
       {error && (
-        <div style={{ marginBottom: "var(--space-6)" }}>
+        <div style={{ marginBottom: "20px" }}>
           <ErrorBanner message={error} onRetry={fetchBooks} />
         </div>
       )}
@@ -59,25 +94,17 @@ export function BorrowedBookList() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-            gap: "var(--space-6)",
-            marginBottom: "var(--space-8)",
+            gap: "20px",
+            marginBottom: "28px",
           }}
           aria-busy="true"
         >
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonCard key={i} className="design-card" style={{ minHeight: "200px", display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div style={{ flex: 1 }}>
-                  <Skeleton className="skeleton-title" width="70%" style={{ marginBottom: "var(--space-2)" }} />
-                  <Skeleton className="skeleton-text" width="50%" />
-                </div>
-                <Skeleton width="64px" height="22px" borderRadius="var(--radius-sm)" />
-              </div>
-              <Skeleton height="36px" borderRadius="var(--radius-sm)" />
-              <div>
-                <Skeleton className="skeleton-text" width="100%" style={{ marginBottom: "var(--space-2)" }} />
-                <Skeleton height="6px" />
-              </div>
+            <SkeletonCard key={i} className="design-card" style={{ height: "200px", padding: "20px" }}>
+              <Skeleton className="skeleton-title" width="70%" style={{ marginBottom: "8px" }} />
+              <Skeleton className="skeleton-text" width="50%" style={{ marginBottom: "20px" }} />
+              <Skeleton height="36px" style={{ marginBottom: "14px" }} />
+              <Skeleton height="6px" />
             </SkeletonCard>
           ))}
         </div>
@@ -88,18 +115,18 @@ export function BorrowedBookList() {
         <div
           style={{
             textAlign: "center",
-            padding: "4rem 2rem",
+            padding: "4rem 1rem",
             background: "var(--color-surface-raised)",
             border: "1px dashed var(--color-border-default)",
-            borderRadius: "var(--radius-md)",
-            color: "var(--color-text-secondary)",
+            borderRadius: "var(--radius-lg)",
           }}
         >
-          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "var(--space-2)", fontWeight: 600 }}>
-            No borrowed books found
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🤝</div>
+          <p style={{ fontSize: "18px", color: "#ffffff", marginBottom: "6px", fontWeight: 700 }}>
+            No borrowed books active
           </p>
-          <p style={{ fontSize: "var(--font-size-3xl)" }}>
-            When someone lends you a book, it will appear here in real-time.
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "14px" }}>
+            When another user lends you a book from their library, it will stream here in real time via authenticated WebSockets.
           </p>
         </div>
       )}
@@ -110,9 +137,9 @@ export function BorrowedBookList() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-              gap: "var(--space-6)",
-              marginBottom: "var(--space-8)",
+              gridTemplateColumns: "repeat(auto-fill, minmax(310px, 1fr))",
+              gap: "20px",
+              marginBottom: "28px",
             }}
           >
             {data.items.map((item) => {
@@ -129,52 +156,34 @@ export function BorrowedBookList() {
                   key={item.lendingId}
                   className="design-card"
                   style={{
-                    padding: "var(--space-6)",
+                    padding: "20px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "var(--space-4)",
-                    position: "relative",
+                    gap: "14px",
+                    background: "linear-gradient(180deg, #111d33 0%, #0d1524 100%)",
                   }}
                 >
                   {/* Header */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <h3 style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", fontWeight: 600, marginBottom: "var(--space-1)" }}>
+                      <h3 style={{ fontSize: "17px", color: "#ffffff", fontWeight: 700, marginBottom: "4px" }}>
                         {book.title}
                       </h3>
-                      <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-2xl)" }}>by {book.author}</p>
+                      <p style={{ color: "var(--color-text-secondary)", fontSize: "13px" }}>by {book.author}</p>
                     </div>
-                    <span
-                      style={{
-                        fontSize: "var(--font-size-lg)",
-                        fontWeight: 700,
-                        padding: "var(--space-1) var(--space-3)",
-                        borderRadius: "var(--radius-full)",
-                        background: "rgba(0, 194, 255, 0.12)",
-                        color: "var(--color-accent-primary)",
-                        border: "1px solid rgba(0, 194, 255, 0.35)",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      Borrowed
-                    </span>
+                    <span className="badge badge-lent">Borrowed</span>
                   </div>
 
                   {/* Owner Info */}
                   <div
+                    className="glass-panel"
                     style={{
-                      background: "var(--color-surface-base)",
-                      padding: "var(--space-3) var(--space-4)",
-                      borderRadius: "var(--radius-md)",
-                      fontSize: "var(--font-size-2xl)",
+                      padding: "8px 12px",
+                      fontSize: "12px",
                       color: "var(--color-text-secondary)",
-                      border: "1px solid var(--color-border-muted)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
                     }}
                   >
-                    <span>Lent by: <strong style={{ color: "var(--color-text-tertiary)" }}>{item.ownerName}</strong> ({item.ownerEmail})</span>
+                    <span>Lent by: <strong style={{ color: "#ffffff" }}>{item.ownerName}</strong> ({item.ownerEmail})</span>
                   </div>
 
                   {/* Progress Bar */}
@@ -183,13 +192,13 @@ export function BorrowedBookList() {
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
-                        fontSize: "var(--font-size-2xl)",
-                        color: "var(--color-text-primary)",
-                        marginBottom: "var(--space-2)",
+                        fontSize: "12px",
+                        color: "var(--color-text-secondary)",
+                        marginBottom: "6px",
                       }}
                     >
-                      <span>Progress</span>
-                      <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>
+                      <span>Reading Progress</span>
+                      <span style={{ color: "#ffffff", fontWeight: 600 }}>
                         {currentPage} / {totalPages} pages ({progressPercent}%)
                       </span>
                     </div>
@@ -197,7 +206,7 @@ export function BorrowedBookList() {
                       style={{
                         width: "100%",
                         height: "6px",
-                        background: "var(--color-surface-muted)",
+                        background: "rgba(255, 255, 255, 0.08)",
                         borderRadius: "var(--radius-full)",
                         overflow: "hidden",
                       }}
@@ -206,7 +215,7 @@ export function BorrowedBookList() {
                         style={{
                           width: `${progressPercent}%`,
                           height: "100%",
-                          background: "var(--color-accent-primary)",
+                          background: "#38bdf8",
                           transition: "width var(--motion-normal)",
                         }}
                       />
@@ -217,16 +226,15 @@ export function BorrowedBookList() {
                   <div
                     style={{
                       marginTop: "auto",
-                      paddingTop: "var(--space-2)",
-                      fontSize: "var(--font-size-xl)",
-                      color: "var(--color-text-secondary)",
-                      fontStyle: "italic",
+                      paddingTop: "6px",
+                      fontSize: "11px",
+                      color: "var(--color-text-muted)",
                       display: "flex",
                       alignItems: "center",
-                      gap: "var(--space-2)",
+                      gap: "4px",
                     }}
                   >
-                    <span>🔒 Read-only view</span>
+                    <span>🔒 Scoped read-only access (Borrower permission)</span>
                   </div>
                 </div>
               );
@@ -242,25 +250,25 @@ export function BorrowedBookList() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 flexWrap: "wrap",
-                gap: "1rem",
-                padding: "var(--space-4) var(--space-6)",
+                gap: "12px",
+                padding: "12px 20px",
               }}
             >
-              <div style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-2xl)" }}>
-                Page <strong style={{ color: "var(--color-text-tertiary)" }}>{page}</strong> of <strong style={{ color: "var(--color-text-tertiary)" }}>{data.totalPages}</strong>
+              <div style={{ color: "var(--color-text-secondary)", fontSize: "13px" }}>
+                Page <strong style={{ color: "#ffffff" }}>{page}</strong> of <strong style={{ color: "#ffffff" }}>{data.totalPages}</strong>
               </div>
-              <div style={{ display: "flex", gap: "var(--space-3)" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="btn btn-ghost btn-sm"
+                  className="btn btn-secondary btn-xs"
                 >
                   ← Previous
                 </button>
                 <button
                   disabled={page >= data.totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="btn btn-ghost btn-sm"
+                  className="btn btn-secondary btn-xs"
                 >
                   Next →
                 </button>
@@ -272,3 +280,4 @@ export function BorrowedBookList() {
     </div>
   );
 }
+

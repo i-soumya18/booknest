@@ -5,9 +5,11 @@ import { Book, BookSortBy, BookStatus, PaginatedResponse, SortOrder } from "@/ty
 import { fetchApi } from "@/lib/api/client";
 import { BookCard } from "./BookCard";
 import { BookForm, BookFormData } from "./BookForm";
-import { Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
+import { LendBookModal } from "@/features/lending";
+import { Skeleton, SkeletonCard, ErrorBanner, useToast } from "@/components/ui";
 
 export function BookList() {
+  const { success, error: toastError } = useToast();
   const [paginatedData, setPaginatedData] = useState<PaginatedResponse<Book>>({
     items: [],
     page: 1,
@@ -22,11 +24,15 @@ export function BookList() {
   const [statusFilter, setStatusFilter] = useState<BookStatus | "">("");
   const [sortBy, setSortBy] = useState<BookSortBy>("created_at");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [lendingBook, setLendingBook] = useState<Book | null>(null);
+  const [isLendModalOpen, setIsLendModalOpen] = useState(false);
+
 
   const loadBooks = useCallback(async () => {
     setLoading(true);
@@ -87,28 +93,37 @@ export function BookList() {
       rating: formData.rating,
       notes: formData.notes,
     };
-    if (editingBook) {
-      await fetchApi<Book>(`/api/v1/books/${editingBook.id}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetchApi<Book>("/api/v1/books", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+    try {
+      if (editingBook) {
+        await fetchApi<Book>(`/api/v1/books/${editingBook.id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+        success(`Updated "${formData.title}"`);
+      } else {
+        await fetchApi<Book>("/api/v1/books", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+        success(`Added "${formData.title}" to library`);
+      }
+      setIsFormOpen(false);
+      setEditingBook(null);
+      loadBooks();
+    } catch (err) {
+      toastError("Save failed", err instanceof Error ? err.message : "Error saving book");
+      throw err;
     }
-    setIsFormOpen(false);
-    setEditingBook(null);
-    loadBooks();
   };
 
   const handleDelete = async (bookId: string) => {
     setError(null);
     try {
       await fetchApi(`/api/v1/books/${bookId}`, { method: "DELETE" });
+      success("Book deleted from library");
       loadBooks();
     } catch (err) {
+      toastError("Failed to delete book", err instanceof Error ? err.message : "Error");
       setError(err instanceof Error ? err.message : "Failed to delete book.");
     }
   };
@@ -118,98 +133,182 @@ export function BookList() {
   };
 
   return (
-    <div style={{ padding: "var(--space-6) 0" }}>
+    <div style={{ padding: "8px 0" }}>
       {/* Header & Primary Action */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "var(--space-8)",
+          marginBottom: "24px",
           flexWrap: "wrap",
-          gap: "var(--space-4)",
+          gap: "16px",
         }}
       >
         <div className="section-header" style={{ marginBottom: 0 }}>
-          <h2>My Book Library</h2>
-          <p>Manage, filter, and track your reading collection with server-side pagination.</p>
+          <h2>📚 My Book Library</h2>
+          <p>Manage, filter, and track your personal collection with server-side pagination.</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingBook(null);
-            setIsFormOpen(true);
-          }}
-          className="btn btn-primary"
-        >
-          + Add Book
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={() => {
+              if (paginatedData.items.length > 0) {
+                setLendingBook(paginatedData.items[0]);
+              } else {
+                setIsLendModalOpen(true);
+              }
+            }}
+            disabled={paginatedData.items.length === 0}
+            className="btn btn-secondary"
+            style={{ border: "1px solid rgba(56, 189, 248, 0.4)", color: "var(--color-accent-primary)" }}
+          >
+            <span>🤝</span> Lend a Book
+          </button>
+          <button
+            onClick={() => {
+              setEditingBook(null);
+              setIsFormOpen(true);
+            }}
+            className="btn btn-primary"
+          >
+            <span>+</span> Add Book
+          </button>
+        </div>
       </div>
 
-      {/* Filter, Search & Sorting Bar */}
+
+      {/* Filter, Search & View Controls Bar */}
       <div
         className="design-card"
         style={{
-          padding: "var(--space-5)",
-          marginBottom: "var(--space-8)",
+          padding: "16px 20px",
+          marginBottom: "24px",
           display: "flex",
-          flexWrap: "wrap",
-          gap: "var(--space-4)",
-          alignItems: "center",
-          justifyContent: "space-between",
+          flexDirection: "column",
+          gap: "14px",
         }}
       >
-        {/* Search Input */}
-        <div style={{ flex: "1 1 280px" }}>
-          <input
-            type="text"
-            placeholder="🔍 Search by title or author..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="input-field"
-          />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+          {/* Search Input */}
+          <div style={{ flex: "1 1 280px", position: "relative" }}>
+            <input
+              type="text"
+              placeholder="🔍 Search by title or author..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="input-field"
+              style={{ paddingRight: search ? "32px" : "12px" }}
+            />
+            {search && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setPage(1);
+                }}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Controls Right */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+            {/* Sort Field */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as BookSortBy)}
+              className="input-field"
+              style={{ width: "auto", cursor: "pointer", fontSize: "13px", padding: "6px 10px" }}
+            >
+              <option value="created_at">Date Added</option>
+              <option value="title">Title</option>
+              <option value="rating">Rating</option>
+            </select>
+
+            {/* Sort Direction Toggle */}
+            <button
+              onClick={toggleSortOrder}
+              title={`Sort ${sortOrder === "asc" ? "Ascending" : "Descending"}`}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: "12px" }}
+            >
+              {sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
+            </button>
+
+            {/* View Mode Toggle */}
+            <div style={{ display: "flex", background: "rgba(8,13,22,0.8)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border-default)", padding: "2px" }}>
+              <button
+                onClick={() => setViewMode("grid")}
+                className="btn btn-xs"
+                style={{
+                  background: viewMode === "grid" ? "rgba(56,189,248,0.2)" : "transparent",
+                  color: viewMode === "grid" ? "#38bdf8" : "var(--color-text-muted)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 8px",
+                }}
+                title="Grid View"
+              >
+                🔲 Grid
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className="btn btn-xs"
+                style={{
+                  background: viewMode === "list" ? "rgba(56,189,248,0.2)" : "transparent",
+                  color: viewMode === "list" ? "#38bdf8" : "var(--color-text-muted)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "4px 8px",
+                }}
+                title="Dense List View"
+              >
+                📄 List
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Filters and Sorting Controls */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)", alignItems: "center" }}>
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as BookStatus | "");
-              setPage(1);
-            }}
-            className="input-field"
-            style={{ width: "auto", cursor: "pointer" }}
-          >
-            <option value="">All Statuses</option>
-            <option value="WANT_TO_READ">Want to Read</option>
-            <option value="READING">Reading</option>
-            <option value="FINISHED">Finished</option>
-          </select>
-
-          {/* Sort By Select */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as BookSortBy)}
-            className="input-field"
-            style={{ width: "auto", cursor: "pointer" }}
-          >
-            <option value="created_at">Date Added</option>
-            <option value="title">Title</option>
-            <option value="rating">Rating</option>
-          </select>
-
-          {/* Sort Direction Toggle */}
-          <button
-            onClick={toggleSortOrder}
-            title={`Sort ${sortOrder === "asc" ? "Ascending" : "Descending"}`}
-            className="btn btn-ghost btn-sm"
-          >
-            {sortOrder === "asc" ? "↑ Asc" : "↓ Desc"}
-          </button>
+        {/* Status Filter Chips */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", color: "var(--color-text-muted)", fontWeight: 600 }}>Filter:</span>
+          {[
+            { id: "", label: "All Statuses" },
+            { id: "WANT_TO_READ", label: "Want to Read" },
+            { id: "READING", label: "Currently Reading" },
+            { id: "FINISHED", label: "Finished" },
+          ].map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => {
+                setStatusFilter(chip.id as any);
+                setPage(1);
+              }}
+              className="btn btn-xs"
+              style={{
+                background: statusFilter === chip.id ? "rgba(56, 189, 248, 0.15)" : "transparent",
+                color: statusFilter === chip.id ? "#38bdf8" : "var(--color-text-secondary)",
+                border: statusFilter === chip.id ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid var(--color-border-subtle)",
+                borderRadius: "var(--radius-full)",
+                padding: "3px 10px",
+                fontWeight: statusFilter === chip.id ? 700 : 500,
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -219,21 +318,20 @@ export function BookList() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "1.25rem",
+            gap: "20px",
           }}
           aria-label="Loading books"
           aria-busy="true"
         >
           {Array.from({ length: 6 }).map((_, i) => (
-            <SkeletonCard key={i} className="design-card">
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
+            <SkeletonCard key={i} className="design-card" style={{ height: "260px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
                 <Skeleton className="skeleton-title" width="65%" />
                 <Skeleton width="60px" height="20px" borderRadius="var(--radius-full)" />
               </div>
-              <Skeleton className="skeleton-text" width="45%" style={{ marginBottom: "var(--space-6)" }} />
-              <Skeleton height="6px" style={{ marginBottom: "var(--space-6)" }} />
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)", marginTop: "auto" }}>
-                <Skeleton width="50px" height="26px" borderRadius="var(--radius-sm)" />
+              <Skeleton className="skeleton-text" width="45%" style={{ marginBottom: "20px" }} />
+              <Skeleton height="6px" style={{ marginBottom: "20px" }} />
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "auto" }}>
                 <Skeleton width="50px" height="26px" borderRadius="var(--radius-sm)" />
                 <Skeleton width="50px" height="26px" borderRadius="var(--radius-sm)" />
               </div>
@@ -254,22 +352,23 @@ export function BookList() {
             textAlign: "center",
             padding: "4rem 1rem",
             background: "var(--color-surface-raised)",
-            borderRadius: "var(--radius-md)",
+            borderRadius: "var(--radius-lg)",
             border: "1px dashed var(--color-border-default)",
           }}
         >
-          <p style={{ fontSize: "var(--font-size-h3)", color: "var(--color-text-tertiary)", marginBottom: "0.5rem", fontWeight: 600 }}>
-            No books found matching your criteria.
+          <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>📖</div>
+          <p style={{ fontSize: "18px", color: "#ffffff", marginBottom: "6px", fontWeight: 700 }}>
+            No books found
           </p>
-          <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)", marginBottom: "1.5rem" }}>
-            Try adjusting your search terms or filters, or add your first book.
+          <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", marginBottom: "20px" }}>
+            {search || statusFilter ? "Try adjusting your search terms or filters." : "Add your first book to start tracking your reading journey."}
           </p>
           <button
             onClick={() => {
               setEditingBook(null);
               setIsFormOpen(true);
             }}
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm"
           >
             + Add First Book
           </button>
@@ -279,27 +378,97 @@ export function BookList() {
       {/* Success State */}
       {!loading && !error && paginatedData.items.length > 0 && (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "1.25rem",
-              marginBottom: "2rem",
-            }}
-          >
-            {paginatedData.items.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                onEdit={(b) => {
-                  setEditingBook(b);
-                  setIsFormOpen(true);
-                }}
-                onDelete={handleDelete}
-                onProgressUpdated={loadBooks}
-              />
-            ))}
-          </div>
+          {viewMode === "grid" ? (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
+                gap: "20px",
+                marginBottom: "24px",
+              }}
+            >
+              {paginatedData.items.map((book) => (
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  onEdit={(b) => {
+                    setEditingBook(b);
+                    setIsFormOpen(true);
+                  }}
+                  onLend={(b) => setLendingBook(b)}
+                  onDelete={handleDelete}
+                  onProgressUpdated={loadBooks}
+                />
+              ))}
+            </div>
+          ) : (
+            /* Dense Table List View */
+            <div className="design-card" style={{ overflowX: "auto", marginBottom: "24px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--color-border-default)", color: "var(--color-text-secondary)" }}>
+                    <th style={{ padding: "12px 16px" }}>Book Title</th>
+                    <th style={{ padding: "12px 16px" }}>Author</th>
+                    <th style={{ padding: "12px 16px" }}>Status</th>
+                    <th style={{ padding: "12px 16px" }}>Progress</th>
+                    <th style={{ padding: "12px 16px" }}>Rating</th>
+                    <th style={{ padding: "12px 16px", textAlign: "right" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedData.items.map((book) => {
+                    const cp = book.current_page ?? book.currentPage ?? 0;
+                    const tp = book.total_pages ?? book.totalPages ?? 1;
+                    const pct = Math.round((cp / tp) * 100);
+                    return (
+                      <tr key={book.id} style={{ borderBottom: "1px solid var(--color-border-subtle)" }}>
+                        <td style={{ padding: "12px 16px", color: "#ffffff", fontWeight: 600 }}>{book.title}</td>
+                        <td style={{ padding: "12px 16px", color: "var(--color-text-secondary)" }}>{book.author}</td>
+                        <td style={{ padding: "12px 16px" }}>
+                          <span className={`badge ${book.status === "FINISHED" ? "badge-finished" : book.status === "READING" ? "badge-reading" : "badge-want"}`}>
+                            {book.status.replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "var(--color-text-primary)" }}>
+                          {cp}/{tp} p. ({pct}%)
+                        </td>
+                        <td style={{ padding: "12px 16px", color: "#fbbf24" }}>
+                          {book.rating ? "★".repeat(book.rating) : "-"}
+                        </td>
+                        <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                          <button
+                            onClick={() => setLendingBook(book)}
+                            className="btn btn-ghost btn-xs"
+                            style={{ color: "var(--color-accent-primary)" }}
+                          >
+                            🤝 Lend
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingBook(book);
+                              setIsFormOpen(true);
+                            }}
+                            className="btn btn-ghost btn-xs"
+                            style={{ marginLeft: "4px" }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(book.id)}
+                            className="btn btn-danger btn-xs"
+                            style={{ marginLeft: "4px" }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
 
           {/* Server-Side Pagination Footer */}
           <div
@@ -309,16 +478,16 @@ export function BookList() {
               justifyContent: "space-between",
               alignItems: "center",
               flexWrap: "wrap",
-              gap: "1rem",
-              padding: "var(--space-4) var(--space-6)",
+              gap: "12px",
+              padding: "12px 20px",
             }}
           >
-            <div style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-2xl)" }}>
+            <div style={{ color: "var(--color-text-secondary)", fontSize: "13px" }}>
               Showing {paginatedData.items.length} of {paginatedData.total} books (Page {paginatedData.page} of{" "}
               {paginatedData.totalPages})
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -326,7 +495,7 @@ export function BookList() {
                   setPage(1);
                 }}
                 className="input-field"
-                style={{ width: "auto", padding: "var(--space-1) var(--space-3)", fontSize: "var(--font-size-2xl)" }}
+                style={{ width: "auto", padding: "4px 8px", fontSize: "12px" }}
               >
                 <option value="10">10 per page</option>
                 <option value="20">20 per page</option>
@@ -336,7 +505,7 @@ export function BookList() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-secondary btn-xs"
               >
                 ← Previous
               </button>
@@ -344,7 +513,7 @@ export function BookList() {
               <button
                 disabled={page >= paginatedData.totalPages}
                 onClick={() => setPage((prev) => prev + 1)}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-secondary btn-xs"
               >
                 Next →
               </button>
@@ -364,6 +533,21 @@ export function BookList() {
           }}
         />
       )}
+
+      {/* Top-Level Lending Modal (outside book cards) */}
+      {(lendingBook || isLendModalOpen) && (
+        <LendBookModal
+          book={lendingBook || paginatedData.items[0]}
+          availableBooks={paginatedData.items}
+          onClose={() => {
+            setLendingBook(null);
+            setIsLendModalOpen(false);
+          }}
+          onSuccess={loadBooks}
+        />
+      )}
     </div>
   );
 }
+
+

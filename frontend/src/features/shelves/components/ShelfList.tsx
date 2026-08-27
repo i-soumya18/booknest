@@ -6,11 +6,12 @@ import { Shelf } from "@/types";
 import { fetchApi } from "@/lib/api/client";
 import { ShelfCard } from "./ShelfCard";
 import { ShelfForm, ShelfFormData } from "./ShelfForm";
-import { Skeleton, SkeletonCard, ErrorBanner } from "@/components/ui";
+import { Skeleton, SkeletonCard, ErrorBanner, useToast } from "@/components/ui";
 
 type FilterTab = "all" | "shared";
 
 export function ShelfList() {
+  const { success, error: toastError } = useToast();
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [loading, setLoading] = useState(true);
@@ -37,21 +38,27 @@ export function ShelfList() {
   }, [loadShelves]);
 
   const handleCreateOrUpdate = async (formData: ShelfFormData) => {
-    if (editingShelf) {
-      const updated = await fetchApi<Shelf>(`/api/v1/shelves/${editingShelf.id}`, {
-        method: "PUT",
-        body: JSON.stringify(formData),
-      });
-      setShelves((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    } else {
-      const created = await fetchApi<Shelf>("/api/v1/shelves", {
-        method: "POST",
-        body: JSON.stringify(formData),
-      });
-      setShelves((prev) => [created, ...prev]);
+    try {
+      if (editingShelf) {
+        const updated = await fetchApi<Shelf>(`/api/v1/shelves/${editingShelf.id}`, {
+          method: "PUT",
+          body: JSON.stringify(formData),
+        });
+        setShelves((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+        success(`Updated shelf "${formData.name}"`);
+      } else {
+        const created = await fetchApi<Shelf>("/api/v1/shelves", {
+          method: "POST",
+          body: JSON.stringify(formData),
+        });
+        setShelves((prev) => [created, ...prev]);
+        success(`Created shelf "${formData.name}"`);
+      }
+      setIsFormOpen(false);
+      setEditingShelf(null);
+    } catch (err) {
+      toastError("Save failed", err instanceof Error ? err.message : "Error saving shelf");
     }
-    setIsFormOpen(false);
-    setEditingShelf(null);
   };
 
   const handleDelete = async (shelfId: string) => {
@@ -65,21 +72,21 @@ export function ShelfList() {
   };
 
   return (
-    <div style={{ padding: "var(--space-6) 0" }}>
+    <div style={{ padding: "8px 0" }}>
       {/* Header */}
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "var(--space-8)",
+          marginBottom: "24px",
           flexWrap: "wrap",
-          gap: "var(--space-4)",
+          gap: "16px",
         }}
       >
         <div className="section-header" style={{ marginBottom: 0 }}>
-          <h2>My Shelves</h2>
-          <p>Organize your books into custom collections and shared collaborative shelves.</p>
+          <h2>📁 Shelf Collections</h2>
+          <p>Organize books into custom collections with fine-grained role-based access control (RBAC).</p>
         </div>
         <button
           onClick={() => {
@@ -88,7 +95,7 @@ export function ShelfList() {
           }}
           className="btn btn-primary"
         >
-          + New Shelf
+          <span>+</span> New Shelf
         </button>
       </div>
 
@@ -96,46 +103,45 @@ export function ShelfList() {
       <div
         style={{
           display: "flex",
-          gap: "var(--space-3)",
-          marginBottom: "var(--space-8)",
+          gap: "8px",
+          marginBottom: "24px",
           borderBottom: "1px solid var(--color-border-default)",
-          paddingBottom: "var(--space-3)",
+          paddingBottom: "12px",
         }}
       >
         <button
           onClick={() => setActiveTab("all")}
+          className="btn btn-xs"
           style={{
-            padding: "var(--space-2) var(--space-5)",
-            border: "none",
-            background: activeTab === "all" ? "var(--color-accent-primary)" : "transparent",
-            color: activeTab === "all" ? "#000000" : "var(--color-text-secondary)",
-            borderRadius: "var(--radius-md)",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: "var(--font-size-2xl)",
-            transition: "all var(--motion-fast)",
+            background: activeTab === "all" ? "rgba(56, 189, 248, 0.18)" : "transparent",
+            color: activeTab === "all" ? "#38bdf8" : "var(--color-text-secondary)",
+            border: activeTab === "all" ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
+            borderRadius: "var(--radius-full)",
+            fontWeight: activeTab === "all" ? 700 : 500,
+            padding: "6px 14px",
+            fontSize: "13px",
           }}
         >
-          📁 All Shelves
+          📁 All Shelves {activeTab === "all" && `(${shelves.length})`}
         </button>
 
         <button
           onClick={() => setActiveTab("shared")}
+          className="btn btn-xs"
           style={{
-            padding: "var(--space-2) var(--space-5)",
-            border: "none",
-            background: activeTab === "shared" ? "var(--color-accent-primary)" : "transparent",
-            color: activeTab === "shared" ? "#000000" : "var(--color-text-secondary)",
-            borderRadius: "var(--radius-md)",
-            fontWeight: 700,
-            cursor: "pointer",
-            fontSize: "var(--font-size-2xl)",
-            transition: "all var(--motion-fast)",
+            background: activeTab === "shared" ? "rgba(56, 189, 248, 0.18)" : "transparent",
+            color: activeTab === "shared" ? "#38bdf8" : "var(--color-text-secondary)",
+            border: activeTab === "shared" ? "1px solid rgba(56, 189, 248, 0.4)" : "1px solid transparent",
+            borderRadius: "var(--radius-full)",
+            fontWeight: activeTab === "shared" ? 700 : 500,
+            padding: "6px 14px",
+            fontSize: "13px",
           }}
         >
-          🤝 Shared With Me
+          👥 Shared With Me {activeTab === "shared" && `(${shelves.length})`}
         </button>
       </div>
+
 
       {/* Loading Skeleton State */}
       {loading && (
