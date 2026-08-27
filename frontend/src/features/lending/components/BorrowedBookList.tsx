@@ -117,10 +117,12 @@ export function BorrowedBookList() {
           >
             {data.items.map((item) => {
               const book = item.book;
-              const progressPercent = Math.min(
-                100,
-                Math.round((book.currentPage / (book.totalPages || 1)) * 100)
-              );
+              const currentPage = book.current_page ?? book.currentPage ?? 0;
+              const totalPages = book.total_pages ?? book.totalPages ?? 1;
+              const rawPercent = Math.min(100, (currentPage / (totalPages || 1)) * 100);
+              const progressPercent = Number.isInteger(rawPercent)
+                ? rawPercent.toString()
+                : (Math.round(rawPercent * 10) / 10).toFixed(1);
 
               return (
                 <div
@@ -188,7 +190,7 @@ export function BorrowedBookList() {
                     >
                       <span>Progress</span>
                       <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>
-                        {book.currentPage} / {book.totalPages} pages ({progressPercent}%)
+                        {currentPage} / {totalPages} pages ({progressPercent}%)
                       </span>
                     </div>
                     <div

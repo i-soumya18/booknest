@@ -40,8 +40,32 @@ export function BookList() {
       params.append("sort_by", sortBy);
       params.append("sort_order", sortOrder);
 
-      const data = await fetchApi<PaginatedResponse<Book>>(`/api/v1/books?${params.toString()}`);
-      setPaginatedData(data);
+      const data = await fetchApi<any>(`/api/v1/books?${params.toString()}`);
+      const normalizedItems: Book[] = (data.items || []).map((b: any) => ({
+        ...b,
+        totalPages: b.total_pages ?? b.totalPages ?? 1,
+        total_pages: b.total_pages ?? b.totalPages ?? 1,
+        currentPage: b.current_page ?? b.currentPage ?? 0,
+        current_page: b.current_page ?? b.currentPage ?? 0,
+        ownerId: b.owner_id ?? b.ownerId,
+        owner_id: b.owner_id ?? b.ownerId,
+        createdAt: b.created_at ?? b.createdAt,
+        created_at: b.created_at ?? b.createdAt,
+        updatedAt: b.updated_at ?? b.updatedAt,
+        updated_at: b.updated_at ?? b.updatedAt,
+        finishedAt: b.finished_at ?? b.finishedAt,
+        finished_at: b.finished_at ?? b.finishedAt,
+      }));
+      const total = data.total ?? 0;
+      const totalPages = data.total_pages ?? data.totalPages ?? (Math.ceil(total / (data.page_size || pageSize)) || 0);
+
+      setPaginatedData({
+        items: normalizedItems,
+        page: data.page ?? page,
+        pageSize: data.page_size ?? data.pageSize ?? pageSize,
+        total,
+        totalPages,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load books.");
     } finally {
@@ -54,15 +78,24 @@ export function BookList() {
   }, [loadBooks]);
 
   const handleCreateOrUpdate = async (formData: BookFormData) => {
+    const payload = {
+      title: formData.title,
+      author: formData.author,
+      status: formData.status,
+      total_pages: formData.total_pages ?? formData.totalPages,
+      current_page: formData.current_page ?? formData.currentPage ?? 0,
+      rating: formData.rating,
+      notes: formData.notes,
+    };
     if (editingBook) {
       await fetchApi<Book>(`/api/v1/books/${editingBook.id}`, {
         method: "PUT",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
     } else {
       await fetchApi<Book>("/api/v1/books", {
         method: "POST",
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
     }
     setIsFormOpen(false);

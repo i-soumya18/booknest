@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_days: int = Field(default=30, validation_alias="JWT_REFRESH_TTL_DAYS")
 
     cors_origins: str = Field(
-        default="http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001",
+        default="http://localhost:3000,http://localhost:3001,http://localhost:3005,http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3005",
         validation_alias="CORS_ORIGINS",
     )
 

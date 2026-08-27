@@ -14,8 +14,11 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCardProps) {
+  const currentPage = book.current_page ?? book.currentPage ?? 0;
+  const totalPages = book.total_pages ?? book.totalPages ?? 1;
+
   const [isEditingProgress, setIsEditingProgress] = useState(false);
-  const [pageInput, setPageInput] = useState<number>(book.currentPage);
+  const [pageInput, setPageInput] = useState<number>(currentPage);
   const [progressError, setProgressError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [returning, setReturning] = useState(false);
@@ -36,10 +39,10 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
     }
   };
 
-  const progressPercent = Math.min(
-    100,
-    Math.round((book.currentPage / (book.totalPages || 1)) * 100)
-  );
+  const rawPercent = Math.min(100, (currentPage / (totalPages || 1)) * 100);
+  const progressPercent = Number.isInteger(rawPercent)
+    ? rawPercent.toString()
+    : (Math.round(rawPercent * 10) / 10).toFixed(1);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -61,8 +64,8 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
       setProgressError("Page cannot be negative.");
       return;
     }
-    if (pageInput > book.totalPages) {
-      setProgressError(`Page cannot exceed total pages (${book.totalPages}).`);
+    if (pageInput > totalPages) {
+      setProgressError(`Page cannot exceed total pages (${totalPages}).`);
       return;
     }
 
@@ -131,12 +134,12 @@ export function BookCard({ book, onEdit, onDelete, onProgressUpdated }: BookCard
           <span>Progress</span>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
             <span style={{ color: "var(--color-text-tertiary)", fontWeight: 500 }}>
-              {book.currentPage} / {book.totalPages} pages ({progressPercent}%)
+              {currentPage} / {totalPages} pages ({progressPercent}%)
             </span>
             {!isEditingProgress && (
               <button
                 onClick={() => {
-                  setPageInput(book.currentPage);
+                  setPageInput(currentPage);
                   setProgressError(null);
                   setIsEditingProgress(true);
                 }}

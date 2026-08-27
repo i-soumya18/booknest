@@ -101,8 +101,7 @@ Frontend will be available at `http://localhost:3000`.
 ```bash
 cd backend
 .venv/bin/pytest
-# 53 tests, all passing
-```
+# 129 tests, all passing
 
 ---
 
@@ -425,9 +424,8 @@ booknest/
 │   │   └── ws/           # WebSocket auth, ConnectionManager, event router
 │   ├── scripts/
 │   │   └── seed.py       # Deterministic seed script
-│   ├── tests/            # 53 critical-path pytest tests
+│   ├── tests/            # 129 comprehensive pytest tests across all domains
 │   └── alembic/          # SQL migration scripts
-├── frontend/
 │   └── src/
 │       └── features/     # Domain-scoped feature folders (auth, books, shelves, lending, dashboard, activity)
 ├── Diagrams/             # 15 architecture & data-model diagrams

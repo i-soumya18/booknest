@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { Shelf } from "@/types";
 import { fetchApi } from "@/lib/api/client";
 import { ShelfCard } from "./ShelfCard";
@@ -204,25 +205,108 @@ export function ShelfList() {
 
       {/* Success State */}
       {!loading && !error && shelves.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "1.25rem",
-          }}
-        >
-          {shelves.map((shelf) => (
-            <ShelfCard
-              key={shelf.id}
-              shelf={shelf}
-              onEdit={(s) => {
-                setEditingShelf(s);
-                setIsFormOpen(true);
+        <>
+          {activeTab === "shared" && (
+            <div
+              className="design-card"
+              style={{
+                marginBottom: "var(--space-8)",
+                overflowX: "auto",
+                padding: "var(--space-2)",
               }}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  textAlign: "left",
+                  fontSize: "var(--font-size-2xl)",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      borderBottom: "1px solid var(--color-border-default)",
+                      color: "var(--color-text-secondary)",
+                      fontSize: "var(--font-size-xl)",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    <th style={{ padding: "var(--space-4) var(--space-6)" }}>Shelf</th>
+                    <th style={{ padding: "var(--space-4) var(--space-6)" }}>Role</th>
+                    <th style={{ padding: "var(--space-4) var(--space-6)", textAlign: "right" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shelves.map((shelf) => {
+                    const role = shelf.userRole || (shelf as any).user_role || "VIEWER";
+                    const isEditor = role === "EDITOR";
+                    return (
+                      <tr
+                        key={shelf.id}
+                        style={{
+                          borderBottom: "1px solid var(--color-border-muted)",
+                          transition: "background var(--motion-fast)",
+                        }}
+                      >
+                        <td style={{ padding: "var(--space-4) var(--space-6)", fontWeight: 600, color: "var(--color-text-tertiary)" }}>
+                          📁 {shelf.name}
+                        </td>
+                        <td style={{ padding: "var(--space-4) var(--space-6)" }}>
+                          <span
+                            style={{
+                              fontSize: "var(--font-size-sm)",
+                              fontWeight: 700,
+                              padding: "2px 8px",
+                              borderRadius: "var(--radius-full)",
+                              background: isEditor ? "rgba(0, 194, 255, 0.15)" : "rgba(16, 185, 129, 0.15)",
+                              color: isEditor ? "var(--color-accent-primary)" : "var(--color-success)",
+                              border: `1px solid ${isEditor ? "rgba(0, 194, 255, 0.4)" : "rgba(16, 185, 129, 0.4)"}`,
+                              letterSpacing: "0.04em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {role}
+                          </span>
+                        </td>
+                        <td style={{ padding: "var(--space-4) var(--space-6)", textAlign: "right" }}>
+                          <Link
+                            href={`/shelves/${shelf.id}`}
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: "var(--color-accent-primary)" }}
+                          >
+                            View Books →
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+              gap: "1.25rem",
+            }}
+          >
+            {shelves.map((shelf) => (
+              <ShelfCard
+                key={shelf.id}
+                shelf={shelf}
+                onEdit={(s) => {
+                  setEditingShelf(s);
+                  setIsFormOpen(true);
+                }}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        </>
       )}
 
       {/* Form Modal */}

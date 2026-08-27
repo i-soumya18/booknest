@@ -86,24 +86,40 @@ export function DashboardView() {
           Production-minded reading tracker featuring custom shelf RBAC, real-time WebSockets, atomic page progress tracking, and lending concurrency controls.
         </p>
 
-        <div style={{ marginBottom: "var(--space-6)" }}>
+        <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", marginBottom: "var(--space-8)", flexWrap: "wrap" }}>
+          <Link href="/login" className="btn btn-primary" style={{ minWidth: "140px" }}>
+            Sign In
+          </Link>
+          <Link href="/signup" className="btn btn-secondary" style={{ minWidth: "140px" }}>
+            Create Account
+          </Link>
+        </div>
+
+        <div style={{ marginBottom: "var(--space-6)", borderTop: "1px solid var(--color-border-muted)", paddingTop: "var(--space-6)" }}>
           <p style={{ fontSize: "var(--font-size-2xl)", fontWeight: 600, color: "var(--color-text-secondary)", marginBottom: "var(--space-4)", letterSpacing: "0.05em" }}>
-            QUICK DEMO SIGN-IN
+            OR USE QUICK DEMO ACCOUNTS
           </p>
           <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", flexWrap: "wrap" }}>
             <button
               onClick={() => handleQuickLogin("alice@example.com")}
               disabled={loggingIn}
-              className="btn btn-primary"
+              className="btn btn-secondary"
             >
-              {loggingIn ? <Spinner /> : "👤"} Sign in as Alice (Owner)
+              {loggingIn ? <Spinner /> : "👤"} Alice (Owner)
             </button>
             <button
               onClick={() => handleQuickLogin("bob@example.com")}
               disabled={loggingIn}
               className="btn btn-secondary"
             >
-              {loggingIn ? <Spinner /> : "👤"} Sign in as Bob (Borrower)
+              {loggingIn ? <Spinner /> : "👤"} Bob (Borrower)
+            </button>
+            <button
+              onClick={() => handleQuickLogin("charlie@example.com")}
+              disabled={loggingIn}
+              className="btn btn-secondary"
+            >
+              {loggingIn ? <Spinner /> : "👤"} Charlie (Viewer)
             </button>
           </div>
         </div>
@@ -415,26 +431,76 @@ export function DashboardView() {
         {!metrics?.recent_activity || metrics.recent_activity.length === 0 ? (
           <p style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-size-3xl)" }}>No recent activity recorded.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             {metrics.recent_activity.map((evt) => {
               const eventType = evt.event_type || evt.eventType || "EVENT";
               const timestamp = evt.created_at || evt.createdAt || new Date().toISOString();
+              const p = evt.payload || {};
+              const timeStr = new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+              let desc = "";
+              switch (eventType) {
+                case "BOOK_ADDED":
+                  desc = `Added "${p.title || "Book"}"`;
+                  break;
+                case "BOOK_STATUS_CHANGED":
+                  desc = `Changed "${p.title || "Book"}" to ${p.new_status?.replace(/_/g, " ")}`;
+                  break;
+                case "BOOK_PROGRESS_UPDATED":
+                  desc = `Updated progress on "${p.title || "Book"}" (${p.progress_percentage || 0}%)`;
+                  break;
+                case "BOOK_LENT":
+                  desc = `Lent "${p.book_title || "Book"}" to ${p.borrower_name || p.borrower_email || "user"}`;
+                  break;
+                case "BOOK_RETURNED":
+                  desc = `Returned "${p.book_title || "Book"}"`;
+                  break;
+                case "SHELF_SHARED":
+                  desc = `Shared "${p.shelf_name || "Shelf"}" with ${p.collaborator_name || p.collaborator_email || "user"} (${p.role || "Viewer"})`;
+                  break;
+                case "COLLABORATOR_ROLE_CHANGED":
+                  desc = `Changed role on "${p.shelf_name || "Shelf"}" to ${p.new_role}`;
+                  break;
+                case "COLLABORATOR_REMOVED":
+                  desc = `Removed collaborator from "${p.shelf_name || "Shelf"}"`;
+                  break;
+                case "BOOK_ADDED_TO_SHELF":
+                  desc = `Added "${p.book_title}" to "${p.shelf_name}"`;
+                  break;
+                case "BOOK_REMOVED_FROM_SHELF":
+                  desc = `Removed "${p.book_title}" from "${p.shelf_name}"`;
+                  break;
+                case "SHELF_CREATED":
+                  desc = `Created shelf "${p.name}"`;
+                  break;
+                case "SHELF_DELETED":
+                  desc = `Deleted shelf "${p.name}"`;
+                  break;
+                default:
+                  desc = `${eventType.replace(/_/g, " ")}`;
+              }
+
               return (
                 <div
                   key={evt.id}
                   style={{
                     borderBottom: "1px solid var(--color-border-muted)",
-                    paddingBottom: "var(--space-4)",
+                    paddingBottom: "var(--space-3)",
                     display: "flex",
                     justifyContent: "space-between",
+                    alignItems: "center",
                     fontSize: "var(--font-size-2xl)",
+                    gap: "var(--space-4)",
                   }}
                 >
                   <span style={{ color: "var(--color-text-tertiary)" }}>
-                    <span style={{ color: "var(--color-accent-primary)", fontWeight: 600 }}>{eventType.replace(/_/g, " ")}</span> — {evt.payload?.title || evt.payload?.name || evt.payload?.book_title || "item"}
+                    <span style={{ fontFamily: "var(--font-mono)", color: "var(--color-accent-primary)", marginRight: "var(--space-3)", fontSize: "var(--font-size-md)", fontWeight: 600 }}>
+                      {timeStr}
+                    </span>
+                    {desc}
                   </span>
-                  <span style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-md)" }}>
-                    {new Date(timestamp).toLocaleTimeString()}
+                  <span style={{ color: "var(--color-text-primary)", fontSize: "var(--font-size-sm)", whiteSpace: "nowrap" }}>
+                    {new Date(timestamp).toLocaleDateString([], { month: "short", day: "numeric" })}
                   </span>
                 </div>
               );

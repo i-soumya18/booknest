@@ -8,8 +8,10 @@ export interface BookFormData {
   title: string;
   author: string;
   status: BookStatus;
-  totalPages: number;
-  currentPage: number;
+  total_pages?: number;
+  totalPages?: number;
+  current_page?: number;
+  currentPage?: number;
   rating?: number | null;
   notes?: string | null;
 }
@@ -24,9 +26,15 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [author, setAuthor] = useState(initialData?.author || "");
   const [status, setStatus] = useState<BookStatus>(initialData?.status || "WANT_TO_READ");
-  const [totalPages, setTotalPages] = useState<number>(initialData?.totalPages || 100);
-  const [currentPage, setCurrentPage] = useState<number>(initialData?.currentPage || 0);
-  const [rating, setRating] = useState<number | undefined>(initialData?.rating || undefined);
+  const [totalPages, setTotalPages] = useState<number>(
+    initialData?.total_pages ?? initialData?.totalPages ?? 100
+  );
+  const [currentPage, setCurrentPage] = useState<number>(
+    initialData?.current_page ?? initialData?.currentPage ?? 0
+  );
+  const [rating, setRating] = useState<number | undefined>(
+    initialData?.rating ?? undefined
+  );
   const [notes, setNotes] = useState(initialData?.notes || "");
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -101,7 +109,9 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
         title: title.trim(),
         author: author.trim(),
         status,
+        total_pages: Number(totalPages),
         totalPages: Number(totalPages),
+        current_page: Number(currentPage),
         currentPage: Number(currentPage),
         rating: rating ? Number(rating) : null,
         notes: notes.trim() || null,

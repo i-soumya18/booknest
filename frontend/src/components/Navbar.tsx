@@ -134,19 +134,20 @@ export function Navbar() {
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+              <Link href="/login" className="btn btn-ghost btn-sm">
+                Sign In
+              </Link>
+              <Link href="/signup" className="btn btn-primary btn-sm">
+                Create Account
+              </Link>
+              <div style={{ width: "1px", height: "20px", background: "var(--color-border-muted)", margin: "0 var(--space-1)" }} />
               <button
                 onClick={() => handleDemoLogin("alice@example.com")}
                 disabled={submitting}
-                className="btn btn-primary btn-sm"
-              >
-                {submitting ? <Spinner /> : null} Demo: Alice (Owner)
-              </button>
-              <button
-                onClick={() => handleDemoLogin("bob@example.com")}
-                disabled={submitting}
                 className="btn btn-secondary btn-sm"
+                title="Quick login as Alice Owner"
               >
-                {submitting ? <Spinner /> : null} Demo: Bob (Borrower)
+                {submitting ? <Spinner /> : null} Demo: Alice
               </button>
             </div>
           )}
@@ -206,11 +207,29 @@ export function Navbar() {
               </button>
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn btn-ghost btn-sm"
+                  style={{ textAlign: "center" }}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  onClick={() => setMobileOpen(false)}
+                  className="btn btn-primary btn-sm"
+                  style={{ textAlign: "center" }}
+                >
+                  Create Account
+                </Link>
+              </div>
               <button
                 onClick={() => handleDemoLogin("alice@example.com")}
                 disabled={submitting}
-                className="btn btn-primary btn-sm"
+                className="btn btn-secondary btn-sm"
               >
                 {submitting ? <Spinner /> : null} Sign in as Alice (Owner)
               </button>

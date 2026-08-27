@@ -6,25 +6,33 @@ export type SortOrder = "asc" | "desc";
 
 export interface Book {
   id: string;
-  ownerId: string;
+  ownerId?: string;
+  owner_id?: string;
   title: string;
   author: string;
   status: BookStatus;
-  totalPages: number;
-  currentPage: number;
+  totalPages?: number;
+  total_pages?: number;
+  currentPage?: number;
+  current_page?: number;
   rating?: number | null;
   notes?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
   finishedAt?: string | null;
+  finished_at?: string | null;
 }
 
 export interface PaginatedResponse<T> {
   items: T[];
   page: number;
   pageSize: number;
+  page_size?: number;
   total: number;
   totalPages: number;
+  total_pages?: number;
 }
 
 export interface BookQueryParams {
