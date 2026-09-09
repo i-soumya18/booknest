@@ -45,12 +45,25 @@ async def seed_data():
         )
 
     async with session_factory() as session:
+        # Ensure Super Admin user exists
+        admin_res = await session.execute(select(User).where(User.email == "sahoosoumya242004@gmail.com"))
+        if not admin_res.scalar():
+            admin_user = User(
+                email="sahoosoumya242004@gmail.com",
+                password_hash=hash_password("iamAdmin@nestbook773789"),
+                name="Soumya Ranjan Sahoo",
+                is_active=True,
+            )
+            session.add(admin_user)
+            await session.commit()
+            logger.info("Seeded Admin User: Soumya Ranjan Sahoo (sahoosoumya242004@gmail.com)")
+
         # Check if already seeded
         res = await session.execute(select(User).where(User.email == "alice@example.com"))
 
         existing_alice = res.scalar()
         if existing_alice:
-            logger.info("Database already seeded with Alice. Skipping seed execution.")
+            logger.info("Database already seeded with Alice. Skipping demo books seed.")
             return
 
         password_hash = hash_password("Password123!")
