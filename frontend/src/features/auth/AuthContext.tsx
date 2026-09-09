@@ -21,7 +21,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("booknest_user");
+        return stored ? JSON.parse(stored) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [loading, setLoading] = useState<boolean>(true);
 
   const saveUserState = (newUser: User | null, token: string | null) => {
@@ -42,18 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Initialize auth state on mount by attempting refresh
   useEffect(() => {
-    // 1. Restore from localStorage if present
-    try {
-      const storedUser = localStorage.getItem("booknest_user");
-      const storedToken = localStorage.getItem("booknest_token");
-      if (storedUser && storedToken) {
-        setAccessToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      }
-    } catch {
-      // Ignore
-    }
-
     async function initAuth() {
       try {
         const data = await fetchApi<{ user: User; tokens: { access_token: string } }>(
@@ -62,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
         saveUserState(data.user, data.tokens.access_token);
       } catch {
+        // If refresh fails and we don't have a valid accessToken, clear local cache
         const currentToken = getAccessToken();
         if (!currentToken) {
           saveUserState(null, null);
@@ -81,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       }
     );
-
     saveUserState(data.user, data.tokens.access_token);
   };
 

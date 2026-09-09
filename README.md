@@ -1,8 +1,10 @@
-# BookNest — Production-Minded Reading Tracker
+# BookNest — Personal Library & Reading Platform
 
-BookNest is a full-stack reading-tracker application where users can manage their personal book libraries, create and share shelves with fine-grained role-based access control, lend books to other users with real-time notifications, and track reading progress with automatic status transitions.
+BookNest is a full-stack reading platform where users can manage their personal book libraries, upload real books (PDF, EPUB), read them in a premium in-browser reader with highlights, annotations, and notes, create and share shelves with fine-grained role-based access control, lend books to other users with real-time notifications, and track reading progress with automatic status transitions.
 
-Built as a coding assessment to demonstrate real-world backend and frontend engineering: relational data modeling, JWT authentication with refresh-token rotation, backend-enforced RBAC, transactional lending with concurrency-safe uniqueness constraints, authenticated WebSocket rooms, event-driven activity logging, and a live-updating dashboard.
+**V1** (complete) demonstrated production-grade engineering: relational data modeling, JWT authentication with refresh-token rotation, backend-enforced RBAC, transactional lending with concurrency-safe uniqueness constraints, authenticated WebSocket rooms, event-driven activity logging, and a live-updating dashboard.
+
+**V2** (in progress) adds the features that make book lovers stay: real file uploads with metadata auto-extraction, a premium in-browser reader (PDF.js/EPUB.js) with highlighting, annotations, bookmarks, rich note-taking (text + image + audio), eye safety tools, theme switching, focus mode, and a locked admin system for user management and application settings.
 
 ---
 
@@ -26,13 +28,16 @@ Built as a coding assessment to demonstrate real-world backend and frontend engi
 ## 1. What the App Does
 
 - **Book Library** — Add, update, delete, and search books with rich metadata (title, author, ISBN, cover image URL, notes, total pages, rating). Filter by status (`WANT_TO_READ`, `READING`, `FINISHED`, `DNF`), search by title/author, sort by rating or date.
-- **Reading Progress** — Track current page; the backend auto-calculates percentage and auto-transitions book status to `FINISHED` when `current_page == total_pages`.
+- **File Upload (V2)** — Upload real book files (PDF, EPUB) with automatic metadata extraction (title, author, page count, cover thumbnail). Drag-drop a file to auto-create a book record with pre-filled metadata.
+- **In-Browser Reader (V2)** — Premium reading interface powered by pdf.js/epub.js. Features: page navigation, zoom, table of contents, full-text search, text highlighting (5 colors), annotations, named bookmarks, rich note-taking (text + image paste + audio recording), theme toggle (Light/Dark/Sepia), eye safety mode (blue-light filter, brightness control), reading timer with break reminders, focus mode, and comprehensive keyboard shortcuts. Reader automatically saves and restores position.
+- **Reading Progress** — Track current page; the backend auto-calculates percentage and auto-transitions book status to `FINISHED` when `current_page == total_pages`. V2 reader syncs progress automatically.
 - **Shelves** — Create named collections of books. Shelves support a many-to-many `shelf_books` junction with explicit `added_at` timestamps.
 - **Shared Shelves + RBAC** — Invite other users to a shelf as `EDITOR` (can add/remove books) or `VIEWER` (read-only). Only the `OWNER` can rename/delete the shelf or manage collaborators. The role is enforced at the API layer — a Viewer that attempts `POST /shelves/{id}/books/{book_id}` directly receives `403 INSUFFICIENT_SHELF_PERMISSIONS`.
-- **Lending** — Book owners lend books to registered borrowers by email. A PostgreSQL partial unique index (`UNIQUE(book_id) WHERE returned_at IS NULL`) makes double-lending impossible even under concurrent requests. Borrowers get a read-only view of borrowed books.
+- **Lending** — Book owners lend books to registered borrowers by email. A PostgreSQL partial unique index (`UNIQUE(book_id) WHERE returned_at IS NULL`) makes double-lending impossible even under concurrent requests. Borrowers get a read-only view of borrowed books (and can read uploaded files in the reader).
 - **Real-Time Notifications** — Every domain mutation (lending, returning, shelf book changes, collaborator changes, progress updates) is dispatched as a `DomainEvent` and routed over authenticated WebSocket rooms (`user:{id}`, `shelf:{id}`) to relevant users without polling.
 - **Activity Feed** — A reverse-chronological log of all domain events (`BOOK_ADDED`, `BOOK_LENT`, `SHELF_SHARED`, `COLLABORATOR_ROLE_CHANGED`, etc.) stored in `activity_events` and rendered live on the frontend.
 - **Dashboard** — Aggregate metrics computed directly from the live database state: total books, books by status, finished this year, average rating, most-populated shelf, active lendings, shelves shared with the user, and recent activity.
+- **Admin System (V2)** — Locked to a configured admin email. Admin dashboard with system analytics (users, uploads, storage), user management (list, deactivate, reactivate, reset password), content moderation, database-backed application settings (max upload size, registration toggle, announcement banner, maintenance mode), and append-only audit log.
 
 ---
 
@@ -157,10 +162,26 @@ The script is **idempotent** — re-running it on an already-seeded database is 
 | `reading_progress` | Per-user, per-book progress tracking (`current_page`, `percentage_complete`). |
 | `activity_events` | Append-only domain event log. `event_type`, `actor_id`, `book_id`, `shelf_id`, `target_user_id`, `payload` (JSONB). |
 
+### V2 Tables (Planned)
+
+| Table | Purpose |
+|---|---|
+| `book_files` | Uploaded book files (PDF/EPUB). One file per book (UNIQUE on `book_id`). Stores path, MIME type, size, page count, cover thumbnail, SHA-256 checksum. |
+| `highlights` | User's text highlights on a book page. Color-coded (yellow, green, blue, pink, purple). Private per user. |
+| `annotations` | Text annotations attached to highlights. CASCADE DELETE from highlight. |
+| `bookmarks` | Named page bookmarks per user per book. UNIQUE on `(book_id, user_id, page_number)`. |
+| `reader_notes` | Rich notes per page (or general book notes). Can link to a highlight. Private per user. |
+| `note_attachments` | Image and audio attachments on notes. Stored on filesystem. CASCADE DELETE from note. |
+| `admin_settings` | Database-backed application settings (key-value with JSONB). No code changes needed for config updates. |
+| `admin_audit_log` | Append-only log of all admin actions (user deactivation, settings changes, content deletion). |
+
 ### Critical Constraints
 
 - `CHECK (owner_id != borrower_id)` on `lendings` — prevents self-lending in the DB itself.
 - `UNIQUE (book_id) WHERE returned_at IS NULL` on `lendings` — makes concurrent double-lending impossible without application-level locking.
+- `UNIQUE (book_id)` on `book_files` — enforces one file per book. (V2)
+- `UNIQUE (book_id, user_id, page_number, start_offset, end_offset)` on `highlights` — prevents duplicate highlights. (V2)
+- `UNIQUE (key)` on `admin_settings` — one row per setting. (V2)
 - `CASCADE DELETE` chains: deleting a user deletes their books, shelves, collaborator entries, and refresh tokens.
 
 ---
@@ -185,6 +206,8 @@ The script is **idempotent** — re-running it on an already-seeded database is 
 | **Next.js 14 (App Router)** | React 18 server/client component model, TypeScript throughout, built-in fetch with caching. |
 | **Vanilla CSS Modules** | Zero dependency, co-located with components, no runtime overhead. Preferred over Tailwind for full visual control. |
 | **WebSocket (native browser API)** | No library needed for event subscription; reconnect logic is lightweight and explicit. |
+| **pdf.js (V2)** | Mozilla's PDF renderer — client-side PDF rendering to canvas/SVG with text layer for selection/highlighting. |
+| **epub.js (V2)** | Client-side EPUB rendering with pagination, annotation API, and TOC extraction. |
 
 ### Architecture
 
@@ -365,14 +388,26 @@ Storing the full token in the database would let a DB leak compromise sessions. 
 
 ## 11. Future Improvements
 
+### In Progress (V2 — Phases 20–28)
+
+- **Real book file uploads** (PDF, EPUB) with metadata auto-extraction — Phase 20–21.
+- **Premium in-browser reader** (pdf.js/epub.js) with highlights, annotations, bookmarks, notes — Phase 22–25.
+- **Admin system** with user management, system settings, content moderation, audit log — Phase 26–27.
+- **V2 integration testing + security review** — Phase 28.
+
+### Future (Post-V2)
+
 - **Cursor-based pagination** on all list endpoints (books, shelves, activity, lendings).
 - **WebSocket session refresh** — re-validate JWT expiry on the open socket and close gracefully with `4001` when expired.
 - **Mid-session room revocation** — broadcast `COLLABORATOR_REMOVED` and server-side remove socket from room immediately.
-- **Book cover image uploads** — currently `cover_image_url` is a URL field. A proper upload flow with S3/GCS + presigned URLs would replace this.
 - **Email notifications** — borrow/return events could trigger transactional email via SendGrid/Postmark.
 - **Docker Compose** — single `docker compose up` to start PostgreSQL, backend, and frontend together.
 - **Rate limiting** on auth endpoints (`/signup`, `/login`, `/refresh`) to mitigate brute-force attacks.
-- **Audit log immutability** — currently `activity_events` rows can be deleted by DB admin. An append-only table policy or row-level security would enforce immutability.
+- **S3-compatible storage** — swap `LocalStorageBackend` for S3/GCS to support production file storage at scale.
+- **MOBI/DJVU format support** — extend the reader and upload system beyond PDF/EPUB.
+- **Highlight export** — export all highlights and annotations as Markdown or PDF.
+- **Social features** — reading groups, book reviews, recommendation engine.
+- **Mobile app** — React Native or Flutter wrapper for the reader interface.
 
 ---
 
@@ -413,23 +448,36 @@ This project was built with significant AI assistance (Google Gemini / Antigravi
 booknest/
 ├── backend/
 │   ├── app/
-│   │   ├── api/          # FastAPI routers (auth, books, shelves, lending, progress, activity, dashboard, ws)
+│   │   ├── api/          # FastAPI routers (auth, books, shelves, lending, progress, activity, dashboard, ws, admin)
 │   │   ├── auth/         # Argon2id hashing, JWT encode/decode, refresh token logic
 │   │   ├── db/           # SQLAlchemy async engine & session factory
 │   │   ├── events/       # DomainEvent dataclass, EventDispatcher, activity log handler
-│   │   ├── models/       # SQLAlchemy ORM models (user, book, shelf, lending, progress, activity)
+│   │   ├── models/       # SQLAlchemy ORM models (user, book, shelf, lending, progress, activity, book_file, highlight, annotation, bookmark, note, admin)
 │   │   ├── repositories/ # DB query layer (one repo per domain entity)
 │   │   ├── schemas/      # Pydantic request/response schemas
 │   │   ├── services/     # Business logic & transaction ownership
+│   │   ├── storage/      # V2: StorageBackend abstraction (local filesystem, future S3)
 │   │   └── ws/           # WebSocket auth, ConnectionManager, event router
+│   ├── uploads/          # V2: uploaded book files + note attachments
+│   │   ├── books/        # {book_id}/{filename}
+│   │   └── notes/        # {user_id}/{note_id}/{filename}
 │   ├── scripts/
 │   │   └── seed.py       # Deterministic seed script
 │   ├── tests/            # 129 comprehensive pytest tests across all domains
 │   └── alembic/          # SQL migration scripts
+├── frontend/
 │   └── src/
-│       └── features/     # Domain-scoped feature folders (auth, books, shelves, lending, dashboard, activity)
+│       ├── features/     # Domain-scoped feature folders (auth, books, shelves, lending, dashboard, activity, reader, admin)
+│       ├── lib/          # Shared utilities (api, auth, websocket, validation, reader, storage)
+│       ├── hooks/
+│       ├── types/
+│       └── utils/
 ├── Diagrams/             # 15 architecture & data-model diagrams
-├── AGENTS.md             # Engineering constitution & invariants
+├── AGENTS.md             # Engineering constitution & invariants (§1–§56 V1, §57–§65 V2)
+├── CLAUDE.md             # Working memory & status tracker
+├── PHASE_PROMPTS.md      # Phase-by-phase execution prompts (0–19 V1, 20–28 V2)
+├── DESIGN.md             # Design system tokens & component specs
+├── SKILL.md              # Design system skill for agents
 └── .env.example          # Environment variable template
 ```
 
