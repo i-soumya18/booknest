@@ -1,5 +1,5 @@
 import { fetchApi, fetchBlob, sendKeepAlivePatch } from "@/lib/api/client";
-import { Annotation, Book, Highlight, HighlightColor, ReaderProgressUpdate, ReaderState } from "@/types";
+import { Annotation, Book, Bookmark, Highlight, HighlightColor, ReaderProgressUpdate, ReaderState } from "@/types";
 
 export async function getReaderState(bookId: string): Promise<ReaderState> {
   return fetchApi<ReaderState>(`/api/v1/books/${bookId}/reader/state`);
@@ -98,4 +98,32 @@ export async function deleteAnnotation(
       method: "DELETE",
     }
   );
+}
+
+export async function getBookmarks(bookId: string): Promise<Bookmark[]> {
+  return fetchApi<Bookmark[]>(`/api/v1/books/${bookId}/bookmarks`);
+}
+
+export async function createBookmark(
+  bookId: string,
+  pageOrData: number | { page_number: number; label?: string },
+  label?: string
+): Promise<Bookmark> {
+  const payload =
+    typeof pageOrData === "number"
+      ? { page_number: pageOrData, label }
+      : pageOrData;
+  return fetchApi<Bookmark>(`/api/v1/books/${bookId}/bookmarks`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteBookmark(
+  bookId: string,
+  bookmarkId: string
+): Promise<void> {
+  return fetchApi<void>(`/api/v1/books/${bookId}/bookmarks/${bookmarkId}`, {
+    method: "DELETE",
+  });
 }

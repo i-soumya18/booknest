@@ -1,23 +1,35 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   addAnnotation,
+  createBookmark,
   createHighlight,
   deleteAnnotation,
+  deleteBookmark,
   deleteHighlight,
   getBookDetails,
   getBookFileBlob,
+  getBookmarks,
   getHighlights,
 } from "@/features/reader/api/readerApi";
+import { EyeSafetyPopover } from "@/features/reader/components/EyeSafetyPopover";
 import { HighlightPopover } from "@/features/reader/components/HighlightPopover";
 import { ReaderSidebar } from "@/features/reader/components/ReaderSidebar";
 import { ReaderToolbar } from "@/features/reader/components/ReaderToolbar";
+import { ReadingBreakToast } from "@/features/reader/components/ReadingBreakToast";
 import { useReaderProgress } from "@/features/reader/hooks/useReaderProgress";
-import { Book, Highlight, HighlightColor } from "@/types";
+import {
+  Book,
+  Bookmark,
+  Highlight,
+  HighlightColor,
+  SearchResult,
+  TocItem,
+} from "@/types";
 import styles from "./ReaderPage.module.css";
 
 // Dynamically import PDF and EPUB renderers with ssr: false for client canvas/DOM rendering
@@ -47,14 +59,32 @@ export default function ReaderPage() {
 
   // Highlights & annotations state
   const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [tocItems, setTocItems] = useState<TocItem[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [targetCfiOrHref, setTargetCfiOrHref] = useState<string | null>(null);
 
-  // Selection popover state
+  // Sidebar & Popover state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"highlights" | "toc" | "search" | "bookmarks">("highlights");
+  const [isEyeSafetyPopoverOpen, setIsEyeSafetyPopoverOpen] = useState(false);
   const [selectionPopover, setSelectionPopover] = useState<{
     x: number;
     y: number;
     selectedText: string;
   } | null>(null);
+
+  // Eye Safety & Timer states
+  const [warmth, setWarmth] = useState(35);
+  const [brightness, setBrightness] = useState(90);
+  const [breakIntervalMinutes, setBreakIntervalMinutes] = useState(20);
+  const [readingMinutes, setReadingMinutes] = useState(0);
+  const [showBreakToast, setShowBreakToast] = useState(false);
+
+  // Document references for search
+  const pdfDocRef = useRef<any>(null);
+  const epubBookRef = useRef<any>(null);
 
   const {
     currentPage,
@@ -74,7 +104,22 @@ export default function ReaderPage() {
     initialPage: 1,
   });
 
-  // Fetch book metadata, file, and highlights
+  // Reading session timer (increments every minute and triggers eye breaks)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setReadingMinutes((prev) => {
+        const next = prev + 1;
+        if (breakIntervalMinutes > 0 && next % breakIntervalMinutes === 0) {
+          setShowBreakToast(true);
+        }
+        return next;
+      });
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [breakIntervalMinutes]);
+
+  // Fetch book metadata, file, highlights, and bookmarks
   useEffect(() => {
     let isCancelled = false;
 
@@ -106,6 +151,16 @@ export default function ReaderPage() {
           }
         } catch {
           // Non-blocking if highlights fail
+        }
+
+        // Fetch user's bookmarks
+        try {
+          const userBookmarks = await getBookmarks(bookId);
+          if (!isCancelled) {
+            setBookmarks(userBookmarks);
+          }
+        } catch {
+          // Non-blocking if bookmarks fail
         }
       } catch (err: any) {
         if (!isCancelled) {
@@ -149,6 +204,14 @@ export default function ReaderPage() {
     }
   };
 
+  const handleEpubSelection = (text: string, x: number, y: number) => {
+    setSelectionPopover({
+      x,
+      y,
+      selectedText: text,
+    });
+  };
+
   const handleCreateHighlight = async (color: HighlightColor) => {
     if (!selectionPopover || !bookId) return;
     const textToHighlight = selectionPopover.selectedText;
@@ -162,6 +225,7 @@ export default function ReaderPage() {
         color,
       });
       setHighlights((prev) => [...prev, newHighlight]);
+      setSidebarTab("highlights");
       setIsSidebarOpen(true);
     } catch (err) {
       console.error("Failed to create highlight:", err);
@@ -213,6 +277,121 @@ export default function ReaderPage() {
     }
   };
 
+  // Bookmarks handlers
+  const isCurrentPageBookmarked = bookmarks.some(
+    (b) => b.page_number === currentPage
+  );
+
+  const handleToggleBookmark = useCallback(async () => {
+    if (!bookId) return;
+    const existing = bookmarks.find((b) => b.page_number === currentPage);
+    if (existing) {
+      try {
+        await deleteBookmark(bookId, existing.id);
+        setBookmarks((prev) => prev.filter((b) => b.id !== existing.id));
+      } catch (err) {
+        console.error("Failed to delete bookmark:", err);
+      }
+    } else {
+      try {
+        const newBm = await createBookmark(bookId, {
+          page_number: currentPage,
+          label: `Page ${currentPage}`,
+        });
+        setBookmarks((prev) => [...prev, newBm]);
+      } catch (err) {
+        console.error("Failed to create bookmark:", err);
+      }
+    }
+  }, [bookId, bookmarks, currentPage]);
+
+  const handleAddBookmarkWithLabel = async (page: number, label?: string) => {
+    if (!bookId) return;
+    try {
+      const newBm = await createBookmark(bookId, {
+        page_number: page,
+        label: label || `Page ${page}`,
+      });
+      setBookmarks((prev) => [...prev, newBm]);
+    } catch (err) {
+      console.error("Failed to add bookmark:", err);
+    }
+  };
+
+  const handleDeleteBookmarkById = async (bookmarkId: string) => {
+    if (!bookId) return;
+    try {
+      await deleteBookmark(bookId, bookmarkId);
+      setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
+    } catch (err) {
+      console.error("Failed to delete bookmark:", err);
+    }
+  };
+
+  // Document Search across PDF and EPUB
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) return;
+    setIsSearching(true);
+    setSearchResults([]);
+
+    try {
+      const lowerQuery = query.toLowerCase();
+
+      // Search PDF via pdfjs
+      if (pdfDocRef.current) {
+        const doc = pdfDocRef.current;
+        const results: SearchResult[] = [];
+        const maxPages = Math.min(doc.numPages, 300); // limit page count for responsive search
+
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await doc.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(" ");
+
+          const matchIdx = pageText.toLowerCase().indexOf(lowerQuery);
+          if (matchIdx !== -1) {
+            const start = Math.max(0, matchIdx - 35);
+            const end = Math.min(pageText.length, matchIdx + query.length + 35);
+            results.push({
+              pageNumber: i,
+              snippet: (start > 0 ? "..." : "") + pageText.substring(start, end).trim() + (end < pageText.length ? "..." : ""),
+            });
+            if (results.length >= 40) break;
+          }
+        }
+        setSearchResults(results);
+      } else if (epubBookRef.current) {
+        // Search EPUB via epubjs find
+        const book = epubBookRef.current;
+        const rawResults = await (book as any).find(query);
+        const results: SearchResult[] = (rawResults || []).slice(0, 40).map((r: any) => ({
+          pageNumber: 1,
+          cfi: r.cfi,
+          snippet: r.excerpt,
+        }));
+        setSearchResults(results);
+      }
+    } catch (err) {
+      console.error("Search failed:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleNavigateToPageOrTarget = (page: number, cfiOrHref?: string) => {
+    if (cfiOrHref) {
+      setTargetCfiOrHref(cfiOrHref);
+    }
+    setPage(page);
+  };
+
+  const handleToggleBookmarkRef = useRef(handleToggleBookmark);
+  useEffect(() => {
+    handleToggleBookmarkRef.current = handleToggleBookmark;
+  }, [handleToggleBookmark]);
+
   // Global keyboard shortcuts (§60)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -238,12 +417,21 @@ export default function ReaderPage() {
       } else if (e.key === "Escape") {
         if (selectionPopover) {
           setSelectionPopover(null);
+        } else if (isEyeSafetyPopoverOpen) {
+          setIsEyeSafetyPopoverOpen(false);
         } else if (isSidebarOpen) {
           setIsSidebarOpen(false);
         } else if (focusMode) {
           e.preventDefault();
           toggleFocusMode();
         }
+      } else if (e.ctrlKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        handleToggleBookmarkRef.current();
+      } else if (e.ctrlKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setSidebarTab("search");
+        setIsSidebarOpen(true);
       } else if (e.ctrlKey && e.key.toLowerCase() === "h") {
         e.preventDefault();
         setIsSidebarOpen((prev) => !prev);
@@ -270,9 +458,11 @@ export default function ReaderPage() {
     currentPage,
     focusMode,
     isSidebarOpen,
+    isEyeSafetyPopoverOpen,
     selectionPopover,
     theme,
     zoomLevel,
+    bookmarks,
     setPage,
     toggleFocusMode,
     updateTheme,
@@ -315,7 +505,16 @@ export default function ReaderPage() {
 
   return (
     <div className={`${styles.readerContainer} ${themeClass}`}>
-      {eyeSafetyMode && <div className={styles.eyeSafetyFilter} />}
+      {/* Dynamic Eye-Safety Warmth and Brightness Tint */}
+      {eyeSafetyMode && (
+        <div
+          className={styles.eyeSafetyFilter}
+          style={{
+            backgroundColor: `rgba(251, 191, 36, ${0.05 + (warmth / 100) * 0.25})`,
+            filter: `brightness(${brightness}%)`,
+          }}
+        />
+      )}
 
       <ReaderToolbar
         title={book?.title || "Book"}
@@ -326,6 +525,8 @@ export default function ReaderPage() {
         theme={theme}
         focusMode={focusMode}
         eyeSafetyMode={eyeSafetyMode}
+        isBookmarked={isCurrentPageBookmarked}
+        readingMinutes={readingMinutes}
         highlightsCount={highlights.length}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
@@ -334,19 +535,61 @@ export default function ReaderPage() {
         onThemeChange={updateTheme}
         onToggleFocusMode={toggleFocusMode}
         onToggleEyeSafetyMode={toggleEyeSafetyMode}
+        onOpenEyeSafetySettings={() => setIsEyeSafetyPopoverOpen((prev) => !prev)}
+        onToggleBookmark={handleToggleBookmark}
+        onOpenSearch={() => {
+          setSidebarTab("search");
+          setIsSidebarOpen(true);
+        }}
+        onOpenToc={() => {
+          setSidebarTab("toc");
+          setIsSidebarOpen(true);
+        }}
         onFitWidth={() => updateZoom(1.25)}
         onFitPage={() => updateZoom(1.0)}
       />
+
+      {/* Floating Eye-Safety Configuration Popover */}
+      <EyeSafetyPopover
+        isOpen={isEyeSafetyPopoverOpen}
+        onClose={() => setIsEyeSafetyPopoverOpen(false)}
+        eyeSafetyMode={eyeSafetyMode}
+        onToggleEyeSafety={toggleEyeSafetyMode}
+        warmth={warmth}
+        onWarmthChange={setWarmth}
+        brightness={brightness}
+        onBrightnessChange={setBrightness}
+        breakIntervalMinutes={breakIntervalMinutes}
+        onBreakIntervalChange={setBreakIntervalMinutes}
+      />
+
+      {/* 20-20-20 Eye Break Reminder Toast */}
+      {showBreakToast && (
+        <ReadingBreakToast
+          readingMinutes={readingMinutes}
+          onDismiss={() => setShowBreakToast(false)}
+          onTakeBreak={() => {
+            setShowBreakToast(false);
+            toggleFocusMode();
+          }}
+        />
+      )}
 
       <main className={styles.readerContent} onMouseUp={handleMouseUp}>
         {isEpub ? (
           <DynamicEpubReader
             fileBlob={fileBlob}
             currentPage={currentPage}
+            targetCfiOrHref={targetCfiOrHref}
             theme={theme}
             fontSize={fontSize}
             onPageChange={(p) => setPage(p)}
             onTotalPagesLoaded={(t) => setTotalPages(t)}
+            onOutlineLoaded={(items) => setTocItems(items)}
+            onBookReady={(b) => {
+              epubBookRef.current = b;
+            }}
+            onTextSelected={handleEpubSelection}
           />
         ) : (
           <DynamicPdfReader
@@ -355,6 +598,10 @@ export default function ReaderPage() {
             zoomLevel={zoomLevel}
             onPageChange={(p) => setPage(p)}
             onTotalPagesLoaded={(t) => setTotalPages(t)}
+            onOutlineLoaded={(items) => setTocItems(items)}
+            onDocReady={(doc) => {
+              pdfDocRef.current = doc;
+            }}
           />
         )}
       </main>
@@ -369,15 +616,24 @@ export default function ReaderPage() {
         />
       )}
 
-      {/* Reader Sidebar with Highlights & Annotations */}
+      {/* Reader Sidebar with Highlights, Bookmarks, TOC, and Search */}
       <ReaderSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        currentPage={currentPage}
         highlights={highlights}
-        onNavigateToPage={(p) => setPage(p)}
+        onNavigateToPage={handleNavigateToPageOrTarget}
         onDeleteHighlight={handleDeleteHighlight}
         onAddAnnotation={handleAddAnnotation}
         onDeleteAnnotation={handleDeleteAnnotation}
+        bookmarks={bookmarks}
+        onAddBookmark={handleAddBookmarkWithLabel}
+        onDeleteBookmark={handleDeleteBookmarkById}
+        tocItems={tocItems}
+        searchResults={searchResults}
+        isSearching={isSearching}
+        onSearch={handleSearch}
+        activeTab={sidebarTab}
       />
     </div>
   );

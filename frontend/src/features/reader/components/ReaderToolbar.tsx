@@ -12,11 +12,17 @@ interface ReaderToolbarProps {
   theme: ReaderTheme;
   focusMode: boolean;
   eyeSafetyMode: boolean;
+  isBookmarked?: boolean;
+  readingMinutes?: number;
   onPageChange: (newPage: number) => void;
   onZoomChange: (newZoom: number) => void;
   onThemeChange: (newTheme: ReaderTheme) => void;
   onToggleFocusMode: () => void;
   onToggleEyeSafetyMode: () => void;
+  onOpenEyeSafetySettings?: () => void;
+  onToggleBookmark?: () => void;
+  onOpenSearch?: () => void;
+  onOpenToc?: () => void;
   highlightsCount?: number;
   isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
@@ -33,6 +39,8 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
   theme,
   focusMode,
   eyeSafetyMode,
+  isBookmarked = false,
+  readingMinutes = 0,
   highlightsCount = 0,
   isSidebarOpen = false,
   onToggleSidebar,
@@ -41,6 +49,10 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
   onThemeChange,
   onToggleFocusMode,
   onToggleEyeSafetyMode,
+  onOpenEyeSafetySettings,
+  onToggleBookmark,
+  onOpenSearch,
+  onOpenToc,
   onFitWidth,
   onFitPage,
 }) => {
@@ -235,16 +247,59 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
             </button>
           </div>
 
+          {onToggleBookmark && (
+            <button
+              className={`${styles.iconBtn} ${isBookmarked ? styles.iconBtnActive : ""}`}
+              onClick={onToggleBookmark}
+              title={isBookmarked ? "Remove Bookmark (Ctrl+B)" : "Bookmark Page (Ctrl+B)"}
+              aria-label="Toggle Bookmark"
+            >
+              🔖
+            </button>
+          )}
+
+          {onOpenToc && (
+            <button
+              className={styles.iconBtn}
+              onClick={onOpenToc}
+              title="Table of Contents"
+              aria-label="Table of Contents"
+            >
+              📑
+            </button>
+          )}
+
+          {onOpenSearch && (
+            <button
+              className={styles.iconBtn}
+              onClick={onOpenSearch}
+              title="Search Book (Ctrl+F)"
+              aria-label="Search Book"
+            >
+              🔍
+            </button>
+          )}
+
           <button
             className={`${styles.iconBtn} ${
               eyeSafetyMode ? styles.iconBtnActive : ""
             }`}
-            onClick={onToggleEyeSafetyMode}
-            title={eyeSafetyMode ? "Eye Safety: Active" : "Enable Eye Safety Mode"}
-            aria-label="Toggle Eye Safety Mode"
+            onClick={onOpenEyeSafetySettings || onToggleEyeSafetyMode}
+            title={eyeSafetyMode ? "Eye Safety Settings (Active)" : "Eye Safety Settings"}
+            aria-label="Eye Safety Settings"
           >
             🛡️
           </button>
+
+          {readingMinutes > 0 && (
+            <div
+              className={styles.iconBtn}
+              style={{ width: "auto", padding: "0 6px", fontSize: "0.75rem", cursor: "default", opacity: 0.85 }}
+              title={`Reading session duration: ${readingMinutes} minutes`}
+            >
+              ⏱️ {readingMinutes}m
+            </div>
+          )}
 
           <button
             className={`${styles.iconBtn} ${

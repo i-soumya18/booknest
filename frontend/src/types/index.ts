@@ -190,3 +190,25 @@ export interface Highlight {
   annotations: Annotation[];
 }
 
+export interface Bookmark {
+  id: string;
+  book_id: string;
+  user_id: string;
+  page_number: number;
+  label?: string | null;
+  created_at: string;
+}
+
+export interface TocItem {
+  title: string;
+  pageNumber?: number;
+  href?: string;
+  subitems?: TocItem[];
+}
+
+export interface SearchResult {
+  pageNumber: number;
+  snippet: string;
+  cfi?: string;
+}
+

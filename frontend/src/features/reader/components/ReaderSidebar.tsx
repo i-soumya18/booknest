@@ -1,16 +1,28 @@
 import React, { useState } from "react";
 import styles from "./ReaderSidebar.module.css";
-import { Highlight } from "@/types";
+import { Bookmark, Highlight, SearchResult, TocItem } from "@/types";
 
 interface ReaderSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  currentPage: number;
+  // Highlights
   highlights: Highlight[];
-  onNavigateToPage: (page: number) => void;
+  onNavigateToPage: (page: number, cfiOrHref?: string) => void;
   onDeleteHighlight: (highlightId: string) => void;
   onAddAnnotation: (highlightId: string, content: string) => void;
   onDeleteAnnotation: (highlightId: string, annotationId: string) => void;
-  activeTab?: "highlights" | "toc" | "notes" | "bookmarks";
+  // Bookmarks
+  bookmarks: Bookmark[];
+  onAddBookmark: (page: number, label?: string) => void;
+  onDeleteBookmark: (bookmarkId: string) => void;
+  // TOC
+  tocItems: TocItem[];
+  // Search
+  searchResults: SearchResult[];
+  isSearching: boolean;
+  onSearch: (query: string) => void;
+  activeTab?: "highlights" | "toc" | "search" | "bookmarks";
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -24,15 +36,31 @@ const COLOR_MAP: Record<string, string> = {
 export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
   isOpen,
   onClose,
+  currentPage,
   highlights,
   onNavigateToPage,
   onDeleteHighlight,
   onAddAnnotation,
   onDeleteAnnotation,
+  bookmarks,
+  onAddBookmark,
+  onDeleteBookmark,
+  tocItems,
+  searchResults,
+  isSearching,
+  onSearch,
   activeTab = "highlights",
 }) => {
-  const [currentTab, setCurrentTab] = useState<"highlights" | "toc" | "notes" | "bookmarks">(activeTab);
+  const [currentTab, setCurrentTab] = useState<"highlights" | "toc" | "search" | "bookmarks">(activeTab);
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [bookmarkLabelInput, setBookmarkLabelInput] = useState("");
+
+  React.useEffect(() => {
+    if (activeTab) {
+      setCurrentTab(activeTab);
+    }
+  }, [activeTab]);
 
   const handleNoteInputChange = (highlightId: string, text: string) => {
     setNoteInputs((prev) => ({ ...prev, [highlightId]: text }));
@@ -45,6 +73,21 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
     onAddAnnotation(highlightId, text);
     setNoteInputs((prev) => ({ ...prev, [highlightId]: "" }));
   };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      onSearch(searchQuery.trim());
+    }
+  };
+
+  const handleBookmarkSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddBookmark(currentPage, bookmarkLabelInput.trim() || undefined);
+    setBookmarkLabelInput("");
+  };
+
+  const isCurrentPageBookmarked = bookmarks.some((b) => b.page_number === currentPage);
 
   return (
     <aside
@@ -76,6 +119,16 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
         </button>
         <button
           className={`${styles.tabBtn} ${
+            currentTab === "bookmarks" ? styles.tabBtnActive : ""
+          }`}
+          onClick={() => setCurrentTab("bookmarks")}
+          role="tab"
+          aria-selected={currentTab === "bookmarks"}
+        >
+          🔖 Marks ({bookmarks.length})
+        </button>
+        <button
+          className={`${styles.tabBtn} ${
             currentTab === "toc" ? styles.tabBtnActive : ""
           }`}
           onClick={() => setCurrentTab("toc")}
@@ -86,27 +139,18 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
         </button>
         <button
           className={`${styles.tabBtn} ${
-            currentTab === "notes" ? styles.tabBtnActive : ""
+            currentTab === "search" ? styles.tabBtnActive : ""
           }`}
-          onClick={() => setCurrentTab("notes")}
+          onClick={() => setCurrentTab("search")}
           role="tab"
-          aria-selected={currentTab === "notes"}
+          aria-selected={currentTab === "search"}
         >
-          📝 Notes
-        </button>
-        <button
-          className={`${styles.tabBtn} ${
-            currentTab === "bookmarks" ? styles.tabBtnActive : ""
-          }`}
-          onClick={() => setCurrentTab("bookmarks")}
-          role="tab"
-          aria-selected={currentTab === "bookmarks"}
-        >
-          🔖 Bookmarks
+          🔍 Search
         </button>
       </div>
 
       <div className={styles.contentArea}>
+        {/* Highlights Tab */}
         {currentTab === "highlights" && (
           <>
             {highlights.length === 0 ? (
@@ -187,25 +231,132 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
           </>
         )}
 
-        {currentTab === "toc" && (
-          <div className={styles.emptyState}>
-            <p>Table of Contents</p>
-            <p>Ready for Phase 24 full outline & navigation.</p>
-          </div>
-        )}
-
-        {currentTab === "notes" && (
-          <div className={styles.emptyState}>
-            <p>Book Notes</p>
-            <p>Ready for Phase 25 multimedia notes.</p>
-          </div>
-        )}
-
+        {/* Bookmarks Tab */}
         {currentTab === "bookmarks" && (
-          <div className={styles.emptyState}>
-            <p>Bookmarks</p>
-            <p>Ready for Phase 24 named bookmarks.</p>
-          </div>
+          <>
+            <form className={styles.noteForm} onSubmit={handleBookmarkSubmit}>
+              <input
+                type="text"
+                placeholder={`Bookmark Page ${currentPage}...`}
+                className={styles.noteInput}
+                value={bookmarkLabelInput}
+                onChange={(e) => setBookmarkLabelInput(e.target.value)}
+              />
+              <button
+                type="submit"
+                className={styles.noteSaveBtn}
+                disabled={isCurrentPageBookmarked}
+              >
+                {isCurrentPageBookmarked ? "Saved" : "+ Add"}
+              </button>
+            </form>
+
+            {bookmarks.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>No bookmarks yet.</p>
+                <p>Bookmark your favorite chapters or where you paused reading.</p>
+              </div>
+            ) : (
+              bookmarks.map((bm) => (
+                <div
+                  key={bm.id}
+                  className={styles.highlightCard}
+                  onClick={() => onNavigateToPage(bm.page_number)}
+                >
+                  <div className={styles.cardTopRow}>
+                    <span className={styles.pageBadge}>Page {bm.page_number}</span>
+                    <button
+                      className={styles.deleteBtn}
+                      title="Remove bookmark"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteBookmark(bm.id);
+                      }}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#f8fafc", fontWeight: 500 }}>
+                    {bm.label || `Page ${bm.page_number}`}
+                  </p>
+                </div>
+              ))
+            )}
+          </>
+        )}
+
+        {/* Table of Contents Tab */}
+        {currentTab === "toc" && (
+          <>
+            {tocItems.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>No Table of Contents available.</p>
+                <p>This document does not define an outline.</p>
+              </div>
+            ) : (
+              tocItems.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={styles.highlightCard}
+                  onClick={() => onNavigateToPage(item.pageNumber || 1, item.href)}
+                >
+                  <div className={styles.cardTopRow}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#f8fafc" }}>
+                      {item.title}
+                    </span>
+                    <span className={styles.pageBadge}>
+                      {item.pageNumber ? `p. ${item.pageNumber}` : "Chapter"}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
+
+        {/* Search Tab */}
+        {currentTab === "search" && (
+          <>
+            <form className={styles.noteForm} onSubmit={handleSearchSubmit}>
+              <input
+                type="text"
+                placeholder="Search in book..."
+                className={styles.noteInput}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button type="submit" className={styles.noteSaveBtn} disabled={isSearching}>
+                {isSearching ? "..." : "Find"}
+              </button>
+            </form>
+
+            {isSearching && (
+              <div className={styles.emptyState}>
+                <p>Searching document...</p>
+              </div>
+            )}
+
+            {!isSearching && searchResults.length > 0 && (
+              searchResults.map((res, idx) => (
+                <div
+                  key={idx}
+                  className={styles.highlightCard}
+                  onClick={() => onNavigateToPage(res.pageNumber, res.cfi)}
+                >
+                  <div className={styles.cardTopRow}>
+                    <span className={styles.pageBadge}>Page {res.pageNumber}</span>
+                  </div>
+                  <p className={styles.snippetText}>&ldquo;{res.snippet}&rdquo;</p>
+                </div>
+              ))
+            )}
+
+            {!isSearching && searchQuery && searchResults.length === 0 && (
+              <div className={styles.emptyState}>
+                <p>No matches found for &ldquo;{searchQuery}&rdquo;.</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </aside>

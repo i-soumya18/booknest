@@ -1,32 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import ePub, { Book, Rendition } from "epubjs";
 import styles from "./EpubReader.module.css";
-import { ReaderTheme } from "@/types";
+import { ReaderTheme, TocItem } from "@/types";
 
 interface EpubReaderProps {
   fileBlob: Blob;
   currentPage: number;
   currentPosition?: string | null;
+  targetCfiOrHref?: string | null;
   theme: ReaderTheme;
   fontSize: number;
   onPageChange: (newPage: number, cfi?: string) => void;
   onTotalPagesLoaded: (total: number) => void;
+  onOutlineLoaded?: (items: TocItem[]) => void;
+  onBookReady?: (book: Book, rendition: Rendition) => void;
+  onTextSelected?: (text: string, x: number, y: number) => void;
 }
 
 export const EpubReader: React.FC<EpubReaderProps> = ({
   fileBlob,
   currentPage,
   currentPosition,
+  targetCfiOrHref,
   theme,
   fontSize,
   onPageChange,
   onTotalPagesLoaded,
+  onOutlineLoaded,
+  onBookReady,
+  onTextSelected,
 }) => {
   const viewerRef = useRef<HTMLDivElement | null>(null);
   const bookRef = useRef<Book | null>(null);
   const renditionRef = useRef<Rendition | null>(null);
   const onPageChangeRef = useRef(onPageChange);
   const onTotalPagesLoadedRef = useRef(onTotalPagesLoaded);
+  const onOutlineLoadedRef = useRef(onOutlineLoaded);
+  const onBookReadyRef = useRef(onBookReady);
+  const onTextSelectedRef = useRef(onTextSelected);
   const currentPositionRef = useRef(currentPosition);
   const themeRef = useRef(theme);
   const fontSizeRef = useRef(fontSize);
@@ -34,10 +45,13 @@ export const EpubReader: React.FC<EpubReaderProps> = ({
   useEffect(() => {
     onPageChangeRef.current = onPageChange;
     onTotalPagesLoadedRef.current = onTotalPagesLoaded;
+    onOutlineLoadedRef.current = onOutlineLoaded;
+    onBookReadyRef.current = onBookReady;
+    onTextSelectedRef.current = onTextSelected;
     currentPositionRef.current = currentPosition;
     themeRef.current = theme;
     fontSizeRef.current = fontSize;
-  }, [onPageChange, onTotalPagesLoaded, currentPosition, theme, fontSize]);
+  }, [onPageChange, onTotalPagesLoaded, onOutlineLoaded, onBookReady, onTextSelected, currentPosition, theme, fontSize]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +104,45 @@ export const EpubReader: React.FC<EpubReaderProps> = ({
 
         rendition.themes.select(themeRef.current);
         rendition.themes.fontSize(`${fontSizeRef.current}px`);
+
+        // Load navigation / Table of Contents
+        book.loaded.navigation.then((nav: any) => {
+          if (!isCancelled && nav?.toc && onOutlineLoadedRef.current) {
+            const flatten = (items: any[]): TocItem[] => {
+              const res: TocItem[] = [];
+              for (const it of items) {
+                res.push({
+                  title: it.label ? it.label.trim() : "Chapter",
+                  href: it.href,
+                });
+                if (it.subitems && it.subitems.length > 0) {
+                  res.push(...flatten(it.subitems));
+                }
+              }
+              return res;
+            };
+            onOutlineLoadedRef.current(flatten(nav.toc));
+          }
+        });
+
+        if (onBookReadyRef.current) {
+          onBookReadyRef.current(book, rendition);
+        }
+
+        // Selection listener inside rendition iframe
+        rendition.on("selected", (cfiRange: string, contents: any) => {
+          if (onTextSelectedRef.current) {
+            const selection = contents.window.getSelection();
+            const text = selection?.toString()?.trim();
+            if (text && text.length >= 2) {
+              const range = selection?.getRangeAt(0);
+              const rect = range?.getBoundingClientRect();
+              if (rect) {
+                onTextSelectedRef.current(text, rect.left + rect.width / 2, rect.top);
+              }
+            }
+          }
+        });
 
         // Generate locations for page numbers
         book.locations.generate(1000).then(() => {
@@ -161,6 +214,13 @@ export const EpubReader: React.FC<EpubReaderProps> = ({
       renditionRef.current.themes.fontSize(`${fontSize}px`);
     }
   }, [fontSize]);
+
+  // Jump to target CFI or href (from TOC or Search)
+  useEffect(() => {
+    if (targetCfiOrHref && renditionRef.current) {
+      renditionRef.current.display(targetCfiOrHref);
+    }
+  }, [targetCfiOrHref]);
 
   const handlePrev = () => {
     if (renditionRef.current) {

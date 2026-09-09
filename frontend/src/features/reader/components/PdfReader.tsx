@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import { TocItem } from "@/types";
 import styles from "./PdfReader.module.css";
 
 // Configure pdf.js worker
@@ -13,6 +14,8 @@ interface PdfReaderProps {
   zoomLevel: number;
   onTotalPagesLoaded: (total: number) => void;
   onPageChange: (newPage: number) => void;
+  onOutlineLoaded?: (items: TocItem[]) => void;
+  onDocReady?: (doc: pdfjsLib.PDFDocumentProxy) => void;
 }
 
 export const PdfReader: React.FC<PdfReaderProps> = ({
@@ -21,6 +24,8 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
   zoomLevel,
   onTotalPagesLoaded,
   onPageChange,
+  onOutlineLoaded,
+  onDocReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -49,6 +54,47 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
         if (!isCancelled) {
           pdfDocRef.current = doc;
           onTotalPagesLoaded(doc.numPages);
+          if (onDocReady) {
+            onDocReady(doc);
+          }
+
+          // Extract Table of Contents outline if available
+          try {
+            const outline = await doc.getOutline();
+            if (outline && outline.length > 0 && onOutlineLoaded) {
+              const tocList: TocItem[] = [];
+              for (const item of outline) {
+                let pageNum = 1;
+                if (item.dest) {
+                  try {
+                    let destRef: any = item.dest;
+                    if (typeof destRef === "string") {
+                      destRef = await doc.getDestination(destRef);
+                    }
+                    if (destRef && Array.isArray(destRef)) {
+                      const pageIndex = await doc.getPageIndex(destRef[0]);
+                      pageNum = pageIndex + 1;
+                    } else if (destRef) {
+                      const pageIndex = await doc.getPageIndex(destRef as any);
+                      pageNum = pageIndex + 1;
+                    }
+                  } catch {
+                    // Ignore dest failure
+                  }
+                }
+                tocList.push({
+                  title: item.title,
+                  pageNumber: pageNum,
+                });
+              }
+              if (!isCancelled) {
+                onOutlineLoaded(tocList);
+              }
+            }
+          } catch {
+            // Outline not present
+          }
+
           setIsLoading(false);
         }
       } catch (err: any) {
@@ -69,7 +115,7 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
         pdfDocRef.current = null;
       }
     };
-  }, [fileBlob, onTotalPagesLoaded]);
+  }, [fileBlob, onTotalPagesLoaded, onOutlineLoaded, onDocReady]);
 
   // Render current page onto canvas
   useEffect(() => {
