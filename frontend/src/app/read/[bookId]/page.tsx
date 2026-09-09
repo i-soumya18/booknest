@@ -28,6 +28,7 @@ import { ReaderSidebar } from "@/features/reader/components/ReaderSidebar";
 import { ReaderToolbar } from "@/features/reader/components/ReaderToolbar";
 import { ReadingBreakToast } from "@/features/reader/components/ReadingBreakToast";
 import { useReaderProgress } from "@/features/reader/hooks/useReaderProgress";
+import { useAuth } from "@/features/auth";
 import {
   Book,
   Bookmark,
@@ -55,6 +56,7 @@ const DynamicEpubReader = dynamic(
 export default function ReaderPage() {
   const params = useParams();
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const bookId = Array.isArray(params?.bookId) ? params.bookId[0] : (params?.bookId as string);
 
   const [book, setBook] = useState<Book | null>(null);
@@ -110,6 +112,7 @@ export default function ReaderPage() {
     bookId,
     totalPages,
     initialPage: 1,
+    enabled: Boolean(user && !authLoading),
   });
 
   // Reading session timer (increments every minute and triggers eye breaks)
@@ -133,6 +136,12 @@ export default function ReaderPage() {
 
     async function loadBookData() {
       if (!bookId) return;
+      if (authLoading) return;
+      if (!user) {
+        setIsLoadingBook(false);
+        return;
+      }
+
       try {
         setIsLoadingBook(true);
         setErrorMessage(null);
@@ -145,11 +154,18 @@ export default function ReaderPage() {
           setTotalPages(bookData.totalPages || bookData.total_pages || 1);
         }
 
+        // If no file attached to this book
+        if (!bookData.file) {
+          setErrorMessage("No PDF or EPUB file has been uploaded for this book yet. Please upload a book document first.");
+          setIsLoadingBook(false);
+          return;
+        }
+
         // Fetch file blob
         const { blob, mimeType } = await getBookFileBlob(bookId);
         if (isCancelled) return;
         setFileBlob(blob);
-        setFileMime(mimeType);
+        setFileMime(mimeType || bookData.file.mimeType || bookData.file.mime_type || "application/pdf");
 
         // Fetch user's notes
         try {
@@ -197,7 +213,7 @@ export default function ReaderPage() {
     return () => {
       isCancelled = true;
     };
-  }, [bookId]);
+  }, [bookId, user, authLoading]);
 
   // Handle text selection in reader
   const handleMouseUp = () => {
@@ -560,6 +576,37 @@ export default function ReaderPage() {
     updateTheme,
     updateZoom,
   ]);
+
+  if (authLoading) {
+    return (
+      <div className={styles.loadingScreen}>
+        <div className={styles.spinner} />
+        <h2>Verifying Access...</h2>
+        <p>Checking your BookNest reading session</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className={styles.errorScreen}>
+        <h2 className={styles.errorTitle}>Sign In to Read</h2>
+        <p>You need to be signed in to your BookNest account to open and read books.</p>
+        <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "center" }}>
+          <Link
+            href={`/login?redirect=/read/${bookId}`}
+            className={styles.returnBtn}
+            style={{ background: "var(--color-accent-primary)", color: "#000", fontWeight: 600 }}
+          >
+            Sign In Now
+          </Link>
+          <Link href="/books" className={styles.returnBtn}>
+            ← Back to Library
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoadingBook) {
     return (

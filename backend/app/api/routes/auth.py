@@ -12,7 +12,11 @@ settings = get_settings()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-def _set_refresh_cookie(response: Response, raw_token: str) -> None:
+def _set_refresh_cookie(request: Request, response: Response, raw_token: str) -> None:
+    is_secure = (
+        request.url.scheme == "https"
+        or request.headers.get("x-forwarded-proto") == "https"
+    )
     response.set_cookie(
         key="refresh_token",
         value=raw_token,
@@ -20,7 +24,7 @@ def _set_refresh_cookie(response: Response, raw_token: str) -> None:
         max_age=settings.jwt_refresh_ttl_days * 86400,
         path="/api/v1/auth",
         samesite="lax",
-        secure=False,  # Set to True in production HTTPS
+        secure=is_secure,
     )
 
 
@@ -47,7 +51,7 @@ async def signup(
         user_agent=user_agent,
         ip_address=ip_address,
     )
-    _set_refresh_cookie(response, raw_refresh_token)
+    _set_refresh_cookie(request, response, raw_refresh_token)
     return result
 
 
@@ -68,7 +72,7 @@ async def login(
         user_agent=user_agent,
         ip_address=ip_address,
     )
-    _set_refresh_cookie(response, raw_refresh_token)
+    _set_refresh_cookie(request, response, raw_refresh_token)
     return result
 
 
@@ -90,7 +94,7 @@ async def refresh_tokens(
         user_agent=user_agent,
         ip_address=ip_address,
     )
-    _set_refresh_cookie(response, new_raw_refresh_token)
+    _set_refresh_cookie(request, response, new_raw_refresh_token)
     return result
 
 

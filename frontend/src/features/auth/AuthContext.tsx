@@ -50,9 +50,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Initialize auth state on mount by attempting refresh
+  // Initialize auth state on mount by attempting refresh if a session existed
   useEffect(() => {
     async function initAuth() {
+      const hasStoredSession =
+        typeof window !== "undefined" &&
+        (Boolean(localStorage.getItem("booknest_user")) || Boolean(localStorage.getItem("booknest_token")));
+
+      if (!hasStoredSession) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const data = await fetchApi<{ user: User; tokens: { access_token: string } }>(
           "/api/v1/auth/refresh",

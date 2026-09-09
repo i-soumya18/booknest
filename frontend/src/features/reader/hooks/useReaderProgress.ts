@@ -11,6 +11,7 @@ interface UseReaderProgressOptions {
   totalPages?: number;
   initialPage?: number;
   onPageChange?: (newPage: number) => void;
+  enabled?: boolean;
 }
 
 export function useReaderProgress({
@@ -18,6 +19,7 @@ export function useReaderProgress({
   totalPages = 1,
   initialPage = 1,
   onPageChange,
+  enabled = true,
 }: UseReaderProgressOptions) {
   const [readerState, setReaderState] = useState<ReaderState | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
@@ -69,7 +71,7 @@ export function useReaderProgress({
       }
     }
 
-    if (bookId) {
+    if (bookId && enabled) {
       loadState();
     }
 
@@ -77,13 +79,13 @@ export function useReaderProgress({
       isCancelled = true;
       isMountedRef.current = false;
     };
-  }, [bookId]);
+  }, [bookId, enabled]);
 
   // Flush pending update immediately to server
   const flushProgress = useCallback(
     async (immediatePayload?: ReaderProgressUpdate) => {
       const payload = immediatePayload || pendingUpdateRef.current;
-      if (!payload || !bookId) return;
+      if (!payload || !bookId || !enabled) return;
 
       pendingUpdateRef.current = null;
       lastSavedTimeRef.current = Date.now();
@@ -97,7 +99,7 @@ export function useReaderProgress({
         console.error("Failed to save reader progress:", err);
       }
     },
-    [bookId]
+    [bookId, enabled]
   );
 
   // Queue an update with 5-second debounce
