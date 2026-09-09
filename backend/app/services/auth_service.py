@@ -84,6 +84,17 @@ class AuthService:
                 },
             )
 
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": {
+                        "code": "ACCOUNT_DEACTIVATED",
+                        "message": "Your account has been deactivated. Please contact support.",
+                    }
+                },
+            )
+
         access_token, expires_at = create_access_token(str(user.id), user.email)
         raw_refresh_token = generate_raw_token()
         refresh_hash = hash_token(raw_refresh_token)

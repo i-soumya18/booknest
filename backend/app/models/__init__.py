@@ -1,4 +1,6 @@
 from app.models.activity import ActivityEvent
+from app.models.admin_audit_log import AdminAuditLog
+from app.models.admin_setting import AdminSetting
 from app.models.annotation import Annotation
 from app.models.base import Base
 from app.models.book import Book
@@ -24,6 +26,8 @@ __all__ = [
     "Bookmark",
     "ReaderNote",
     "NoteAttachment",
+    "AdminSetting",
+    "AdminAuditLog",
     "Shelf",
     "ShelfBook",
     "ShelfCollaborator",

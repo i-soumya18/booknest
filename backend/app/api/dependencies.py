@@ -56,4 +56,23 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"error": {"code": "ACCOUNT_DEACTIVATED", "message": "Your account has been deactivated. Please contact support."}},
+        )
+
+    return user
+
+
+async def require_admin(
+    user: User = Depends(get_current_user),
+) -> User:
+    from app.config import get_settings
+    settings = get_settings()
+    if user.email.lower() != settings.admin_email.lower():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"error": {"code": "ADMIN_ACCESS_REQUIRED", "message": "Admin privileges required"}},
+        )
     return user
