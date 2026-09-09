@@ -65,6 +65,7 @@ class BookService:
                 },
             )
         book = await self.book_repo.create_book(owner_id=owner_id, data=data)
+        book.file = None
         await event_dispatcher.publish(
             self.session,
             DomainEvent(

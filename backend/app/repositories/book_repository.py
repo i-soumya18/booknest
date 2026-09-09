@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.book import Book
@@ -19,7 +20,7 @@ class BookRepository:
         self.session = session
 
     async def get_by_id(self, book_id: UUID) -> Book | None:
-        stmt = select(Book).where(Book.id == book_id)
+        stmt = select(Book).options(selectinload(Book.file)).where(Book.id == book_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -33,7 +34,7 @@ class BookRepository:
         sort_by: BookSortByEnum = BookSortByEnum.CREATED_AT,
         sort_order: SortOrderEnum = SortOrderEnum.DESC,
     ) -> tuple[list[Book], int]:
-        stmt = select(Book).where(Book.owner_id == owner_id)
+        stmt = select(Book).options(selectinload(Book.file)).where(Book.owner_id == owner_id)
 
         if status is not None:
             stmt = stmt.where(Book.status == status.value)

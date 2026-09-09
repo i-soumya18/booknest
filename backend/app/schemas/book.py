@@ -69,6 +69,9 @@ class BookUpdateRequest(BaseModel):
         return stripped
 
 
+from app.schemas.book_file import BookFileResponse
+
+
 class BookResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -82,9 +85,10 @@ class BookResponse(BaseModel):
     rating: float | int | None = None
     notes: str | None = None
     created_at: datetime
-
     updated_at: datetime
     finished_at: datetime | None = None
+    file: BookFileResponse | None = None
+
 
 
 class ProgressUpdateRequest(BaseModel):

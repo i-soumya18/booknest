@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
@@ -17,9 +18,12 @@ from app.schemas.book import (
     ProgressUpdateResponse,
     SortOrderEnum,
 )
+from app.schemas.book_file import BookFileResponse
 from app.services.book_service import BookService
+from app.services.file_upload_service import FileUploadService
 
 router = APIRouter(prefix="/books", tags=["Books"])
+
 
 
 @router.post("", response_model=BookResponse, status_code=status.HTTP_201_CREATED)
@@ -54,6 +58,24 @@ async def list_books(
         sort_by=sort_by,
         sort_order=sort_order,
     )
+
+
+@router.post("/upload", response_model=BookResponse, status_code=status.HTTP_201_CREATED)
+async def upload_first_book(
+    file: UploadFile = File(...),
+    title: str | None = Form(default=None),
+    author: str | None = Form(default=None),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> BookResponse:
+    service = FileUploadService(session)
+    book = await service.upload_first(
+        user=current_user,
+        file=file,
+        title=title,
+        author=author,
+    )
+    return BookResponse.model_validate(book)
 
 
 @router.get("/{book_id}", response_model=BookResponse)
@@ -102,3 +124,51 @@ async def delete_book(
 ) -> None:
     service = BookService(session)
     await service.delete_book(book_id=book_id, user_id=current_user.id)
+
+
+@router.post("/{book_id}/upload", response_model=BookFileResponse, status_code=status.HTTP_201_CREATED)
+async def upload_book_file(
+    book_id: UUID,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> BookFileResponse:
+    service = FileUploadService(session)
+    book_file = await service.upload_for_book(
+        book_id=book_id,
+        user=current_user,
+        file=file,
+    )
+    return BookFileResponse.model_validate(book_file)
+
+
+@router.get("/{book_id}/file")
+async def get_book_file(
+    book_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> FileResponse:
+    service = FileUploadService(session)
+    file_path, mime_type, original_name = await service.get_book_file(
+        book_id=book_id,
+        user=current_user,
+    )
+    return FileResponse(
+        path=str(file_path),
+        media_type=mime_type,
+        filename=original_name,
+    )
+
+
+@router.delete("/{book_id}/file", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_book_file(
+    book_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    service = FileUploadService(session)
+    await service.delete_book_file(
+        book_id=book_id,
+        user=current_user,
+    )
+

@@ -34,6 +34,15 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, validation_alias="PORT")
     host: str = Field(default="0.0.0.0", validation_alias="HOST")
 
+    # V2 — File Upload & Storage
+    upload_dir: str = Field(default="uploads", validation_alias="UPLOAD_DIR")
+    max_upload_size_mb: int = Field(default=100, validation_alias="MAX_UPLOAD_SIZE_MB")
+
+    # V2 — Admin
+    admin_email: str = Field(
+        default="sahoosoumya242004@gmail.com", validation_alias="ADMIN_EMAIL"
+    )
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
