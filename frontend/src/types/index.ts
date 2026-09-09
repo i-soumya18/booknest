@@ -135,3 +135,32 @@ export interface ActivityEvent {
   createdAt?: string;
 }
 
+export type ReaderTheme = "light" | "dark" | "sepia" | "custom";
+
+export interface ReaderState {
+  id: string;
+  book_id: string;
+  user_id: string;
+  current_page: number;
+  current_position?: string | null;
+  scroll_position?: number | null;
+  zoom_level: number;
+  theme: ReaderTheme;
+  font_size: number;
+  focus_mode: boolean;
+  eye_safety_mode: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReaderProgressUpdate {
+  current_page?: number;
+  current_position?: string | null;
+  scroll_position?: number | null;
+  zoom_level?: number;
+  theme?: ReaderTheme;
+  font_size?: number;
+  focus_mode?: boolean;
+  eye_safety_mode?: boolean;
+}
+

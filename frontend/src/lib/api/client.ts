@@ -171,3 +171,57 @@ export async function uploadWithProgress<T>(
   });
 }
 
+export async function fetchBlob(endpoint: string): Promise<{ blob: Blob; mimeType: string; filename: string }> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
+  const headers: Record<string, string> = {};
+  const token = getAccessToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    let errorDetail = "";
+    try {
+      const errJson = await res.json();
+      errorDetail = errJson?.detail?.error?.message || errJson?.detail || "";
+    } catch {
+      // Ignore
+    }
+    throw new Error(errorDetail || `Failed to fetch file: ${res.status} ${res.statusText}`);
+  }
+  const blob = await res.blob();
+  const mimeType = res.headers.get("content-type") || blob.type || "application/pdf";
+  const disposition = res.headers.get("content-disposition") || "";
+  let filename = "book";
+  const match = disposition.match(/filename="?([^";]+)"?/);
+  if (match && match[1]) {
+    filename = match[1];
+  }
+  return { blob, mimeType, filename };
+}
+
+export function sendKeepAlivePatch(endpoint: string, data: Record<string, any>): void {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const token = getAccessToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  try {
+    fetch(url, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(data),
+      keepalive: true,
+    }).catch(() => {
+      // Ignore background keepalive failures
+    });
+  } catch {
+    // Ignore
+  }
+}
+

@@ -19,8 +19,10 @@ from app.schemas.book import (
     SortOrderEnum,
 )
 from app.schemas.book_file import BookFileResponse
+from app.schemas.reader_state import ReaderProgressUpdate, ReaderStateRead
 from app.services.book_service import BookService
 from app.services.file_upload_service import FileUploadService
+from app.services.reader_service import ReaderService
 
 router = APIRouter(prefix="/books", tags=["Books"])
 
@@ -171,4 +173,29 @@ async def delete_book_file(
         book_id=book_id,
         user=current_user,
     )
+
+
+@router.get("/{book_id}/reader/state", response_model=ReaderStateRead)
+async def get_reader_state(
+    book_id: UUID,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ReaderStateRead:
+    service = ReaderService(session)
+    state = await service.get_or_create_reader_state(book_id=book_id, user=current_user)
+    return ReaderStateRead.model_validate(state)
+
+
+@router.patch("/{book_id}/reader/progress", response_model=ReaderStateRead)
+async def update_reader_progress(
+    book_id: UUID,
+    payload: ReaderProgressUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session),
+) -> ReaderStateRead:
+    service = ReaderService(session)
+    state = await service.update_reader_progress(
+        book_id=book_id, user=current_user, payload=payload
+    )
+    return ReaderStateRead.model_validate(state)
 
