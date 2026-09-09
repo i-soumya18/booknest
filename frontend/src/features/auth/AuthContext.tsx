@@ -21,17 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("booknest_user");
-        return stored ? JSON.parse(stored) : null;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const saveUserState = (newUser: User | null, token: string | null) => {
@@ -53,6 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Initialize auth state on mount by attempting refresh if a session existed
   useEffect(() => {
     async function initAuth() {
+      // First, restore cached user from localStorage immediately upon mount
+      try {
+        const stored = localStorage.getItem("booknest_user");
+        if (stored) {
+          setUser(JSON.parse(stored));
+        }
+      } catch {
+        // Ignore
+      }
+
       const hasStoredSession =
         typeof window !== "undefined" &&
         (Boolean(localStorage.getItem("booknest_user")) || Boolean(localStorage.getItem("booknest_token")));

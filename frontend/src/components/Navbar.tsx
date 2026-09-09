@@ -23,7 +23,7 @@ export function Navbar() {
 
 
   const ADMIN_EMAIL = "sahoosoumya242004@gmail.com";
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = mounted && user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
   const handleDemoLogin = async (demoEmail: string, personaName: string, customPwd?: string) => {
     setSubmitting(true);

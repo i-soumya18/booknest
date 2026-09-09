@@ -59,6 +59,11 @@ export default function ReaderPage() {
   const { user, loading: authLoading } = useAuth();
   const bookId = Array.isArray(params?.bookId) ? params.bookId[0] : (params?.bookId as string);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [book, setBook] = useState<Book | null>(null);
   const [fileBlob, setFileBlob] = useState<Blob | null>(null);
   const [fileMime, setFileMime] = useState<string>("");
@@ -577,7 +582,7 @@ export default function ReaderPage() {
     updateZoom,
   ]);
 
-  if (authLoading) {
+  if (!mounted || authLoading) {
     return (
       <div className={styles.loadingScreen}>
         <div className={styles.spinner} />
