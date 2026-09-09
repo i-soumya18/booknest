@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 import { AuthProvider } from "@/features/auth";
 import { ToastProvider } from "@/components/ui";
 import { Navbar } from "@/components/Navbar";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 
 export const metadata = {
   title: "BookNest — Production Reading Tracker",
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <ToastProvider>
           <AuthProvider>
+            <AnnouncementBanner />
             <Navbar />
             <main className="page-container">
               {children}

@@ -22,12 +22,15 @@ export function Navbar() {
   }, []);
 
 
-  const handleDemoLogin = async (demoEmail: string, personaName: string) => {
+  const ADMIN_EMAIL = "sahoosoumya242004@gmail.com";
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+  const handleDemoLogin = async (demoEmail: string, personaName: string, customPwd?: string) => {
     setSubmitting(true);
     setPersonaDropdownOpen(false);
     setMobileOpen(false);
     try {
-      await login(demoEmail, "Password123!");
+      await login(demoEmail, customPwd || "Password123!");
       success(`Switched persona to ${personaName}`, `Logged in as ${demoEmail}`);
     } catch (err) {
       toastError("Failed to switch persona", err instanceof Error ? err.message : "Authentication failed");
@@ -42,9 +45,13 @@ export function Navbar() {
     { href: "/shelves", label: "Shelves" },
     { href: "/borrowed", label: "Borrowed" },
     { href: "/activity", label: "Activity" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin 🛡️" }] : []),
   ];
 
   const getPersonaRole = (email?: string) => {
+    if (email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      return { role: "Super Admin 🛡️", color: "badge-owner" };
+    }
     if (email === "alice@example.com") return { role: "Owner 👑", color: "badge-owner" };
     if (email === "bob@example.com") return { role: "Editor / Borrower ✏️", color: "badge-editor" };
     if (email === "charlie@example.com") return { role: "Viewer 👁️", color: "badge-viewer" };
@@ -232,6 +239,21 @@ export function Navbar() {
                           <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>Read-only viewer on shared shelves</span>
                         </div>
                       </button>
+
+                      <button
+                        onClick={() => handleDemoLogin("sahoosoumya242004@gmail.com", "Super Admin", "iamAdmin@nestbook773789")}
+                        disabled={submitting}
+                        className="btn btn-ghost btn-xs"
+                        style={{ justifyContent: "flex-start", padding: "6px 8px", textAlign: "left", width: "100%", borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: "2px", paddingTop: "6px" }}
+                      >
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ color: "#f87171", fontWeight: 700 }}>🛡️ Super Admin</span>
+                            <span style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>(Control Panel)</span>
+                          </div>
+                          <span style={{ fontSize: "11px", color: "var(--color-text-secondary)" }}>Full administration & moderation</span>
+                        </div>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -328,6 +350,9 @@ export function Navbar() {
                   </button>
                   <button onClick={() => handleDemoLogin("charlie@example.com", "Charlie")} className="btn btn-secondary btn-xs">
                     👁️ Charlie
+                  </button>
+                  <button onClick={() => handleDemoLogin("sahoosoumya242004@gmail.com", "Super Admin", "iamAdmin@nestbook773789")} className="btn btn-secondary btn-xs">
+                    🛡️ Admin
                   </button>
                 </div>
               </div>

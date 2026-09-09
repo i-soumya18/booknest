@@ -351,6 +351,13 @@ class AdminService:
         _settings_cache_time = now
         return items
 
+    async def get_setting(self, key: str, default: Any = None) -> Any:
+        items = await self.get_settings_list()
+        for item in items:
+            if item.key == key:
+                return item.value
+        return default
+
     async def update_setting(
         self,
         admin: User,

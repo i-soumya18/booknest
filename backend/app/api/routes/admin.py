@@ -22,6 +22,18 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
 @router.get(
+    "/announcement",
+    status_code=status.HTTP_200_OK,
+)
+async def get_announcement(
+    session: AsyncSession = Depends(get_db_session),
+) -> dict[str, str]:
+    service = AdminService(session)
+    banner = await service.get_setting("announcement_banner", default="")
+    return {"announcement": str(banner or "")}
+
+
+@router.get(
     "/analytics",
     response_model=AdminAnalyticsResponse,
     status_code=status.HTTP_200_OK,

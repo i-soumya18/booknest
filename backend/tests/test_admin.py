@@ -18,6 +18,11 @@ def test_admin_non_admin_forbidden(client):
     assert client.get("/api/v1/admin/audit-log", headers=headers).status_code == 403
     assert client.get("/api/v1/admin/moderation/files", headers=headers).status_code == 403
 
+    # Public announcement is accessible by anyone
+    anon_resp = client.get("/api/v1/admin/announcement")
+    assert anon_resp.status_code == 200
+    assert "announcement" in anon_resp.json()
+
 
 def test_admin_analytics_and_users(client):
     admin_headers, admin_id = _create_user(
