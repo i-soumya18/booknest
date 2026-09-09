@@ -1,13 +1,23 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { getBookDetails, getBookFileBlob } from "@/features/reader/api/readerApi";
+import {
+  addAnnotation,
+  createHighlight,
+  deleteAnnotation,
+  deleteHighlight,
+  getBookDetails,
+  getBookFileBlob,
+  getHighlights,
+} from "@/features/reader/api/readerApi";
+import { HighlightPopover } from "@/features/reader/components/HighlightPopover";
+import { ReaderSidebar } from "@/features/reader/components/ReaderSidebar";
 import { ReaderToolbar } from "@/features/reader/components/ReaderToolbar";
 import { useReaderProgress } from "@/features/reader/hooks/useReaderProgress";
-import { Book } from "@/types";
+import { Book, Highlight, HighlightColor } from "@/types";
 import styles from "./ReaderPage.module.css";
 
 // Dynamically import PDF and EPUB renderers with ssr: false for client canvas/DOM rendering
@@ -35,6 +45,17 @@ export default function ReaderPage() {
   const [isLoadingBook, setIsLoadingBook] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Highlights & annotations state
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Selection popover state
+  const [selectionPopover, setSelectionPopover] = useState<{
+    x: number;
+    y: number;
+    selectedText: string;
+  } | null>(null);
+
   const {
     currentPage,
     zoomLevel,
@@ -53,7 +74,7 @@ export default function ReaderPage() {
     initialPage: 1,
   });
 
-  // Fetch book metadata and file
+  // Fetch book metadata, file, and highlights
   useEffect(() => {
     let isCancelled = false;
 
@@ -76,6 +97,16 @@ export default function ReaderPage() {
         if (isCancelled) return;
         setFileBlob(blob);
         setFileMime(mimeType);
+
+        // Fetch user's highlights
+        try {
+          const userHighlights = await getHighlights(bookId);
+          if (!isCancelled) {
+            setHighlights(userHighlights);
+          }
+        } catch {
+          // Non-blocking if highlights fail
+        }
       } catch (err: any) {
         if (!isCancelled) {
           console.error("Failed to load book:", err);
@@ -95,10 +126,96 @@ export default function ReaderPage() {
     };
   }, [bookId]);
 
+  // Handle text selection in reader
+  const handleMouseUp = () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      return;
+    }
+
+    const text = selection.toString().trim();
+    if (text.length >= 2) {
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectionPopover({
+          x: rect.left + rect.width / 2,
+          y: rect.top,
+          selectedText: text,
+        });
+      } catch {
+        // Ignore selection rect errors
+      }
+    }
+  };
+
+  const handleCreateHighlight = async (color: HighlightColor) => {
+    if (!selectionPopover || !bookId) return;
+    const textToHighlight = selectionPopover.selectedText;
+    setSelectionPopover(null);
+    window.getSelection()?.removeAllRanges();
+
+    try {
+      const newHighlight = await createHighlight(bookId, {
+        page_number: currentPage,
+        selected_text: textToHighlight,
+        color,
+      });
+      setHighlights((prev) => [...prev, newHighlight]);
+      setIsSidebarOpen(true);
+    } catch (err) {
+      console.error("Failed to create highlight:", err);
+    }
+  };
+
+  const handleDeleteHighlight = async (highlightId: string) => {
+    if (!bookId) return;
+    try {
+      await deleteHighlight(bookId, highlightId);
+      setHighlights((prev) => prev.filter((h) => h.id !== highlightId));
+    } catch (err) {
+      console.error("Failed to delete highlight:", err);
+    }
+  };
+
+  const handleAddAnnotation = async (highlightId: string, content: string) => {
+    if (!bookId) return;
+    try {
+      const newAnn = await addAnnotation(bookId, highlightId, content);
+      setHighlights((prev) =>
+        prev.map((h) =>
+          h.id === highlightId
+            ? { ...h, annotations: [...(h.annotations || []), newAnn] }
+            : h
+        )
+      );
+    } catch (err) {
+      console.error("Failed to add annotation:", err);
+    }
+  };
+
+  const handleDeleteAnnotation = async (highlightId: string, annotationId: string) => {
+    if (!bookId) return;
+    try {
+      await deleteAnnotation(bookId, highlightId, annotationId);
+      setHighlights((prev) =>
+        prev.map((h) =>
+          h.id === highlightId
+            ? {
+                ...h,
+                annotations: (h.annotations || []).filter((a) => a.id !== annotationId),
+              }
+            : h
+        )
+      );
+    } catch (err) {
+      console.error("Failed to delete annotation:", err);
+    }
+  };
+
   // Global keyboard shortcuts (§60)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept when typing in an input
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement
@@ -119,10 +236,17 @@ export default function ReaderPage() {
         e.preventDefault();
         setPage(currentPage - 1);
       } else if (e.key === "Escape") {
-        if (focusMode) {
+        if (selectionPopover) {
+          setSelectionPopover(null);
+        } else if (isSidebarOpen) {
+          setIsSidebarOpen(false);
+        } else if (focusMode) {
           e.preventDefault();
           toggleFocusMode();
         }
+      } else if (e.ctrlKey && e.key.toLowerCase() === "h") {
+        e.preventDefault();
+        setIsSidebarOpen((prev) => !prev);
       } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
         toggleFocusMode();
@@ -145,6 +269,8 @@ export default function ReaderPage() {
   }, [
     currentPage,
     focusMode,
+    isSidebarOpen,
+    selectionPopover,
     theme,
     zoomLevel,
     setPage,
@@ -200,6 +326,9 @@ export default function ReaderPage() {
         theme={theme}
         focusMode={focusMode}
         eyeSafetyMode={eyeSafetyMode}
+        highlightsCount={highlights.length}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         onPageChange={setPage}
         onZoomChange={updateZoom}
         onThemeChange={updateTheme}
@@ -209,7 +338,7 @@ export default function ReaderPage() {
         onFitPage={() => updateZoom(1.0)}
       />
 
-      <main className={styles.readerContent}>
+      <main className={styles.readerContent} onMouseUp={handleMouseUp}>
         {isEpub ? (
           <DynamicEpubReader
             fileBlob={fileBlob}
@@ -229,6 +358,27 @@ export default function ReaderPage() {
           />
         )}
       </main>
+
+      {/* Floating 5-color Highlight Popover on selection */}
+      {selectionPopover && (
+        <HighlightPopover
+          x={selectionPopover.x}
+          y={selectionPopover.y}
+          onSelectColor={handleCreateHighlight}
+          onClose={() => setSelectionPopover(null)}
+        />
+      )}
+
+      {/* Reader Sidebar with Highlights & Annotations */}
+      <ReaderSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        highlights={highlights}
+        onNavigateToPage={(p) => setPage(p)}
+        onDeleteHighlight={handleDeleteHighlight}
+        onAddAnnotation={handleAddAnnotation}
+        onDeleteAnnotation={handleDeleteAnnotation}
+      />
     </div>
   );
 }

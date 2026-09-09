@@ -164,3 +164,29 @@ export interface ReaderProgressUpdate {
   eye_safety_mode?: boolean;
 }
 
+export type HighlightColor = "yellow" | "green" | "blue" | "pink" | "purple";
+
+export interface Annotation {
+  id: string;
+  highlight_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Highlight {
+  id: string;
+  book_id: string;
+  user_id: string;
+  page_number: number;
+  cfi_range?: string | null;
+  start_offset: number;
+  end_offset: number;
+  selected_text: string;
+  color: HighlightColor;
+  created_at: string;
+  updated_at: string;
+  annotations: Annotation[];
+}
+

@@ -1,5 +1,5 @@
 import { fetchApi, fetchBlob, sendKeepAlivePatch } from "@/lib/api/client";
-import { Book, ReaderProgressUpdate, ReaderState } from "@/types";
+import { Annotation, Book, Highlight, HighlightColor, ReaderProgressUpdate, ReaderState } from "@/types";
 
 export async function getReaderState(bookId: string): Promise<ReaderState> {
   return fetchApi<ReaderState>(`/api/v1/books/${bookId}/reader/state`);
@@ -30,4 +30,72 @@ export function sendReaderProgressKeepAlive(
 
 export async function getBookDetails(bookId: string): Promise<Book> {
   return fetchApi<Book>(`/api/v1/books/${bookId}`);
+}
+
+export async function getHighlights(bookId: string): Promise<Highlight[]> {
+  return fetchApi<Highlight[]>(`/api/v1/books/${bookId}/highlights`);
+}
+
+export async function createHighlight(
+  bookId: string,
+  data: {
+    page_number: number;
+    selected_text: string;
+    color: HighlightColor;
+    start_offset?: number;
+    end_offset?: number;
+    cfi_range?: string | null;
+  }
+): Promise<Highlight> {
+  return fetchApi<Highlight>(`/api/v1/books/${bookId}/highlights`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateHighlightColor(
+  bookId: string,
+  highlightId: string,
+  color: HighlightColor
+): Promise<Highlight> {
+  return fetchApi<Highlight>(`/api/v1/books/${bookId}/highlights/${highlightId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ color }),
+  });
+}
+
+export async function deleteHighlight(
+  bookId: string,
+  highlightId: string
+): Promise<void> {
+  return fetchApi<void>(`/api/v1/books/${bookId}/highlights/${highlightId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function addAnnotation(
+  bookId: string,
+  highlightId: string,
+  content: string
+): Promise<Annotation> {
+  return fetchApi<Annotation>(
+    `/api/v1/books/${bookId}/highlights/${highlightId}/annotations`,
+    {
+      method: "POST",
+      body: JSON.stringify({ content }),
+    }
+  );
+}
+
+export async function deleteAnnotation(
+  bookId: string,
+  highlightId: string,
+  annotationId: string
+): Promise<void> {
+  return fetchApi<void>(
+    `/api/v1/books/${bookId}/highlights/${highlightId}/annotations/${annotationId}`,
+    {
+      method: "DELETE",
+    }
+  );
 }

@@ -17,6 +17,9 @@ interface ReaderToolbarProps {
   onThemeChange: (newTheme: ReaderTheme) => void;
   onToggleFocusMode: () => void;
   onToggleEyeSafetyMode: () => void;
+  highlightsCount?: number;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
   onFitWidth?: () => void;
   onFitPage?: () => void;
 }
@@ -30,6 +33,9 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
   theme,
   focusMode,
   eyeSafetyMode,
+  highlightsCount = 0,
+  isSidebarOpen = false,
+  onToggleSidebar,
   onPageChange,
   onZoomChange,
   onThemeChange,
@@ -250,6 +256,20 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
           >
             ⛶
           </button>
+
+          {onToggleSidebar && (
+            <button
+              className={`${styles.iconBtn} ${
+                isSidebarOpen ? styles.iconBtnActive : ""
+              }`}
+              onClick={onToggleSidebar}
+              title="Toggle Highlights & Tools (Ctrl+H)"
+              aria-label="Toggle Highlights Panel"
+              style={{ width: "auto", padding: "0 8px", fontSize: "0.8rem", gap: "4px" }}
+            >
+              ✏️ {highlightsCount > 0 && <span>{highlightsCount}</span>}
+            </button>
+          )}
         </div>
 
         {/* Progress bar across bottom of toolbar */}

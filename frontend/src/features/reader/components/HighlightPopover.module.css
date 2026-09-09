@@ -1,0 +1,84 @@
+.popover {
+  position: fixed;
+  z-index: 1000;
+  background: var(--surface-card, #1e293b);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(12px);
+  animation: popIn 0.15s ease-out;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -90%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
+.colorBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.colorBtn:hover {
+  transform: scale(1.2);
+  border-color: #ffffff;
+}
+
+.colorYellow {
+  background-color: #facc15;
+}
+
+.colorGreen {
+  background-color: #4ade80;
+}
+
+.colorBlue {
+  background-color: #38bdf8;
+}
+
+.colorPink {
+  background-color: #f472b6;
+}
+
+.colorPurple {
+  background-color: #c084fc;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 4px;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.closeBtn:hover {
+  color: #ffffff;
+}

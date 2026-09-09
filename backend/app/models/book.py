@@ -51,4 +51,5 @@ class Book(Base):
     lendings = relationship("Lending", back_populates="book", cascade="all, delete-orphan")
     file = relationship("BookFile", back_populates="book", uselist=False, lazy="selectin", cascade="all, delete-orphan")
     reader_states = relationship("ReaderState", back_populates="book", cascade="all, delete-orphan")
+    highlights = relationship("Highlight", back_populates="book", cascade="all, delete-orphan")
 

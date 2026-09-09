@@ -1,12 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.routes import activity, auth, books, dashboard, lending, shelves, ws
+from app.api.routes import activity, auth, books, dashboard, highlights, lending, shelves, ws
 
 api_router = APIRouter()
 
 # Include Sub-Routers
 api_router.include_router(auth.router)
 api_router.include_router(books.router)
+api_router.include_router(highlights.router)
 api_router.include_router(shelves.router)
 api_router.include_router(lending.router)
 api_router.include_router(activity.router)
