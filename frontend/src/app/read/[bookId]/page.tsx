@@ -8,13 +8,19 @@ import {
   addAnnotation,
   createBookmark,
   createHighlight,
+  createNote,
   deleteAnnotation,
   deleteBookmark,
   deleteHighlight,
+  deleteNote,
+  deleteNoteAttachment,
   getBookDetails,
   getBookFileBlob,
   getBookmarks,
   getHighlights,
+  getNotes,
+  updateNote,
+  uploadNoteAttachment,
 } from "@/features/reader/api/readerApi";
 import { EyeSafetyPopover } from "@/features/reader/components/EyeSafetyPopover";
 import { HighlightPopover } from "@/features/reader/components/HighlightPopover";
@@ -27,6 +33,7 @@ import {
   Bookmark,
   Highlight,
   HighlightColor,
+  ReaderNote,
   SearchResult,
   TocItem,
 } from "@/types";
@@ -57,7 +64,8 @@ export default function ReaderPage() {
   const [isLoadingBook, setIsLoadingBook] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Highlights & annotations state
+  // Reader tools state
+  const [notes, setNotes] = useState<ReaderNote[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
@@ -67,7 +75,7 @@ export default function ReaderPage() {
 
   // Sidebar & Popover state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<"highlights" | "toc" | "search" | "bookmarks">("highlights");
+  const [sidebarTab, setSidebarTab] = useState<"notes" | "highlights" | "toc" | "search" | "bookmarks">("notes");
   const [isEyeSafetyPopoverOpen, setIsEyeSafetyPopoverOpen] = useState(false);
   const [selectionPopover, setSelectionPopover] = useState<{
     x: number;
@@ -119,7 +127,7 @@ export default function ReaderPage() {
     return () => clearInterval(interval);
   }, [breakIntervalMinutes]);
 
-  // Fetch book metadata, file, highlights, and bookmarks
+  // Fetch book metadata, file, notes, highlights, and bookmarks
   useEffect(() => {
     let isCancelled = false;
 
@@ -143,6 +151,16 @@ export default function ReaderPage() {
         setFileBlob(blob);
         setFileMime(mimeType);
 
+        // Fetch user's notes
+        try {
+          const userNotes = await getNotes(bookId);
+          if (!isCancelled) {
+            setNotes(userNotes);
+          }
+        } catch {
+          // Non-blocking
+        }
+
         // Fetch user's highlights
         try {
           const userHighlights = await getHighlights(bookId);
@@ -150,7 +168,7 @@ export default function ReaderPage() {
             setHighlights(userHighlights);
           }
         } catch {
-          // Non-blocking if highlights fail
+          // Non-blocking
         }
 
         // Fetch user's bookmarks
@@ -160,7 +178,7 @@ export default function ReaderPage() {
             setBookmarks(userBookmarks);
           }
         } catch {
-          // Non-blocking if bookmarks fail
+          // Non-blocking
         }
       } catch (err: any) {
         if (!isCancelled) {
@@ -212,6 +230,7 @@ export default function ReaderPage() {
     });
   };
 
+  // Highlights handlers
   const handleCreateHighlight = async (color: HighlightColor) => {
     if (!selectionPopover || !bookId) return;
     const textToHighlight = selectionPopover.selectedText;
@@ -274,6 +293,75 @@ export default function ReaderPage() {
       );
     } catch (err) {
       console.error("Failed to delete annotation:", err);
+    }
+  };
+
+  // Notes handlers
+  const handleCreateNote = async (
+    content: string,
+    pageNumber: number | null,
+    imageFile?: File | null,
+    audioBlob?: Blob | null,
+    audioDuration?: number
+  ) => {
+    if (!bookId) return;
+    try {
+      const created = await createNote(bookId, {
+        page_number: pageNumber,
+        content,
+      });
+
+      let updatedNote = created;
+      if (imageFile) {
+        const att = await uploadNoteAttachment(bookId, created.id, imageFile);
+        updatedNote = { ...updatedNote, attachments: [...(updatedNote.attachments || []), att] };
+      }
+      if (audioBlob) {
+        const att = await uploadNoteAttachment(bookId, created.id, audioBlob, audioDuration, "memo.webm");
+        updatedNote = { ...updatedNote, attachments: [...(updatedNote.attachments || []), att] };
+      }
+
+      setNotes((prev) => [updatedNote, ...prev]);
+    } catch (err) {
+      console.error("Failed to create note:", err);
+    }
+  };
+
+  const handleUpdateNote = async (noteId: string, content: string) => {
+    if (!bookId) return;
+    try {
+      const updated = await updateNote(bookId, noteId, { content });
+      setNotes((prev) =>
+        prev.map((n) => (n.id === noteId ? { ...n, content: updated.content } : n))
+      );
+    } catch (err) {
+      console.error("Failed to update note:", err);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!bookId) return;
+    try {
+      await deleteNote(bookId, noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch (err) {
+      console.error("Failed to delete note:", err);
+    }
+  };
+
+  const handleDeleteNoteAttachment = async (noteId: string, attachmentId: string) => {
+    if (!bookId) return;
+    try {
+      await deleteNoteAttachment(bookId, noteId, attachmentId);
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === noteId
+            ? { ...n, attachments: n.attachments.filter((a) => a.id !== attachmentId) }
+            : n
+        )
+      );
+    } catch (err) {
+      console.error("Failed to delete note attachment:", err);
     }
   };
 
@@ -341,7 +429,7 @@ export default function ReaderPage() {
       if (pdfDocRef.current) {
         const doc = pdfDocRef.current;
         const results: SearchResult[] = [];
-        const maxPages = Math.min(doc.numPages, 300); // limit page count for responsive search
+        const maxPages = Math.min(doc.numPages, 300);
 
         for (let i = 1; i <= maxPages; i++) {
           const page = await doc.getPage(i);
@@ -425,6 +513,10 @@ export default function ReaderPage() {
           e.preventDefault();
           toggleFocusMode();
         }
+      } else if (e.ctrlKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        setSidebarTab("notes");
+        setIsSidebarOpen(true);
       } else if (e.ctrlKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
         handleToggleBookmarkRef.current();
@@ -527,6 +619,7 @@ export default function ReaderPage() {
         eyeSafetyMode={eyeSafetyMode}
         isBookmarked={isCurrentPageBookmarked}
         readingMinutes={readingMinutes}
+        notesCount={notes.length}
         highlightsCount={highlights.length}
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
@@ -537,6 +630,10 @@ export default function ReaderPage() {
         onToggleEyeSafetyMode={toggleEyeSafetyMode}
         onOpenEyeSafetySettings={() => setIsEyeSafetyPopoverOpen((prev) => !prev)}
         onToggleBookmark={handleToggleBookmark}
+        onOpenNotes={() => {
+          setSidebarTab("notes");
+          setIsSidebarOpen(true);
+        }}
         onOpenSearch={() => {
           setSidebarTab("search");
           setIsSidebarOpen(true);
@@ -616,11 +713,17 @@ export default function ReaderPage() {
         />
       )}
 
-      {/* Reader Sidebar with Highlights, Bookmarks, TOC, and Search */}
+      {/* Reader Sidebar with Notes, Highlights, Bookmarks, TOC, and Search */}
       <ReaderSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         currentPage={currentPage}
+        bookId={bookId}
+        notes={notes}
+        onCreateNote={handleCreateNote}
+        onUpdateNote={handleUpdateNote}
+        onDeleteNote={handleDeleteNote}
+        onDeleteAttachment={handleDeleteNoteAttachment}
         highlights={highlights}
         onNavigateToPage={handleNavigateToPageOrTarget}
         onDeleteHighlight={handleDeleteHighlight}

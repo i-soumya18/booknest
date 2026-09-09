@@ -6,6 +6,8 @@ from app.models.book_file import BookFile
 from app.models.bookmark import Bookmark
 from app.models.highlight import Highlight
 from app.models.lending import Lending
+from app.models.note_attachment import NoteAttachment
+from app.models.reader_note import ReaderNote
 from app.models.reader_state import ReaderState
 from app.models.shelf import Shelf, ShelfBook, ShelfCollaborator
 from app.models.token import RefreshToken
@@ -20,6 +22,8 @@ __all__ = [
     "Highlight",
     "Annotation",
     "Bookmark",
+    "ReaderNote",
+    "NoteAttachment",
     "Shelf",
     "ShelfBook",
     "ShelfCollaborator",

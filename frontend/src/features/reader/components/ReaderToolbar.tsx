@@ -23,6 +23,8 @@ interface ReaderToolbarProps {
   onToggleBookmark?: () => void;
   onOpenSearch?: () => void;
   onOpenToc?: () => void;
+  onOpenNotes?: () => void;
+  notesCount?: number;
   highlightsCount?: number;
   isSidebarOpen?: boolean;
   onToggleSidebar?: () => void;
@@ -41,6 +43,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
   eyeSafetyMode,
   isBookmarked = false,
   readingMinutes = 0,
+  notesCount = 0,
   highlightsCount = 0,
   isSidebarOpen = false,
   onToggleSidebar,
@@ -53,6 +56,7 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
   onToggleBookmark,
   onOpenSearch,
   onOpenToc,
+  onOpenNotes,
   onFitWidth,
   onFitPage,
 }) => {
@@ -311,6 +315,18 @@ export const ReaderToolbar: React.FC<ReaderToolbarProps> = ({
           >
             ⛶
           </button>
+
+          {onOpenNotes && (
+            <button
+              className={styles.iconBtn}
+              onClick={onOpenNotes}
+              title="Reader Notes (Ctrl+N)"
+              aria-label="Reader Notes"
+              style={{ width: "auto", padding: "0 8px", fontSize: "0.8rem", gap: "4px" }}
+            >
+              📝 {notesCount > 0 && <span>{notesCount}</span>}
+            </button>
+          )}
 
           {onToggleSidebar && (
             <button

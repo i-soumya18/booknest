@@ -53,4 +53,5 @@ class Book(Base):
     reader_states = relationship("ReaderState", back_populates="book", cascade="all, delete-orphan")
     highlights = relationship("Highlight", back_populates="book", cascade="all, delete-orphan")
     bookmarks = relationship("Bookmark", back_populates="book", cascade="all, delete-orphan")
+    reader_notes = relationship("ReaderNote", back_populates="book", cascade="all, delete-orphan")
 

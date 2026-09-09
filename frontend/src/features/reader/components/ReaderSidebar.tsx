@@ -1,11 +1,25 @@
 import React, { useState } from "react";
 import styles from "./ReaderSidebar.module.css";
-import { Bookmark, Highlight, SearchResult, TocItem } from "@/types";
+import { NotesTab } from "./NotesTab";
+import { Bookmark, Highlight, ReaderNote, SearchResult, TocItem } from "@/types";
 
 interface ReaderSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   currentPage: number;
+  bookId: string;
+  // Notes
+  notes: ReaderNote[];
+  onCreateNote: (
+    content: string,
+    pageNumber: number | null,
+    imageFile?: File | null,
+    audioBlob?: Blob | null,
+    audioDuration?: number
+  ) => Promise<void>;
+  onUpdateNote: (noteId: string, content: string) => Promise<void>;
+  onDeleteNote: (noteId: string) => Promise<void>;
+  onDeleteAttachment: (noteId: string, attachmentId: string) => Promise<void>;
   // Highlights
   highlights: Highlight[];
   onNavigateToPage: (page: number, cfiOrHref?: string) => void;
@@ -22,7 +36,7 @@ interface ReaderSidebarProps {
   searchResults: SearchResult[];
   isSearching: boolean;
   onSearch: (query: string) => void;
-  activeTab?: "highlights" | "toc" | "search" | "bookmarks";
+  activeTab?: "notes" | "highlights" | "toc" | "search" | "bookmarks";
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -37,6 +51,12 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
   isOpen,
   onClose,
   currentPage,
+  bookId,
+  notes,
+  onCreateNote,
+  onUpdateNote,
+  onDeleteNote,
+  onDeleteAttachment,
   highlights,
   onNavigateToPage,
   onDeleteHighlight,
@@ -49,9 +69,9 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
   searchResults,
   isSearching,
   onSearch,
-  activeTab = "highlights",
+  activeTab = "notes",
 }) => {
-  const [currentTab, setCurrentTab] = useState<"highlights" | "toc" | "search" | "bookmarks">(activeTab);
+  const [currentTab, setCurrentTab] = useState<"notes" | "highlights" | "toc" | "search" | "bookmarks">(activeTab);
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [bookmarkLabelInput, setBookmarkLabelInput] = useState("");
@@ -109,6 +129,16 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
       <div className={styles.tabList} role="tablist">
         <button
           className={`${styles.tabBtn} ${
+            currentTab === "notes" ? styles.tabBtnActive : ""
+          }`}
+          onClick={() => setCurrentTab("notes")}
+          role="tab"
+          aria-selected={currentTab === "notes"}
+        >
+          📝 Notes ({notes.length})
+        </button>
+        <button
+          className={`${styles.tabBtn} ${
             currentTab === "highlights" ? styles.tabBtnActive : ""
           }`}
           onClick={() => setCurrentTab("highlights")}
@@ -150,6 +180,20 @@ export const ReaderSidebar: React.FC<ReaderSidebarProps> = ({
       </div>
 
       <div className={styles.contentArea}>
+        {/* Notes Tab */}
+        {currentTab === "notes" && (
+          <NotesTab
+            bookId={bookId}
+            notes={notes}
+            currentPage={currentPage}
+            onNavigateToPage={onNavigateToPage}
+            onCreateNote={onCreateNote}
+            onUpdateNote={onUpdateNote}
+            onDeleteNote={onDeleteNote}
+            onDeleteAttachment={onDeleteAttachment}
+          />
+        )}
+
         {/* Highlights Tab */}
         {currentTab === "highlights" && (
           <>

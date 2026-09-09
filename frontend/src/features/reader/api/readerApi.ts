@@ -1,5 +1,15 @@
 import { fetchApi, fetchBlob, sendKeepAlivePatch } from "@/lib/api/client";
-import { Annotation, Book, Bookmark, Highlight, HighlightColor, ReaderProgressUpdate, ReaderState } from "@/types";
+import {
+  Annotation,
+  Book,
+  Bookmark,
+  Highlight,
+  HighlightColor,
+  NoteAttachment,
+  ReaderNote,
+  ReaderProgressUpdate,
+  ReaderState,
+} from "@/types";
 
 export async function getReaderState(bookId: string): Promise<ReaderState> {
   return fetchApi<ReaderState>(`/api/v1/books/${bookId}/reader/state`);
@@ -126,4 +136,77 @@ export async function deleteBookmark(
   return fetchApi<void>(`/api/v1/books/${bookId}/bookmarks/${bookmarkId}`, {
     method: "DELETE",
   });
+}
+
+export async function getNotes(bookId: string): Promise<ReaderNote[]> {
+  return fetchApi<ReaderNote[]>(`/api/v1/books/${bookId}/notes`);
+}
+
+export async function createNote(
+  bookId: string,
+  data: { page_number?: number | null; highlight_id?: string | null; content: string }
+): Promise<ReaderNote> {
+  return fetchApi<ReaderNote>(`/api/v1/books/${bookId}/notes`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateNote(
+  bookId: string,
+  noteId: string,
+  data: { page_number?: number | null; content?: string }
+): Promise<ReaderNote> {
+  return fetchApi<ReaderNote>(`/api/v1/books/${bookId}/notes/${noteId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteNote(bookId: string, noteId: string): Promise<void> {
+  return fetchApi<void>(`/api/v1/books/${bookId}/notes/${noteId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function uploadNoteAttachment(
+  bookId: string,
+  noteId: string,
+  file: File | Blob,
+  durationSeconds?: number,
+  filename?: string
+): Promise<NoteAttachment> {
+  const formData = new FormData();
+  formData.append("file", file, filename || (file as File).name || "attachment");
+  if (durationSeconds !== undefined) {
+    formData.append("duration_seconds", String(durationSeconds));
+  }
+  return fetchApi<NoteAttachment>(
+    `/api/v1/books/${bookId}/notes/${noteId}/attachments`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+}
+
+export async function deleteNoteAttachment(
+  bookId: string,
+  noteId: string,
+  attachmentId: string
+): Promise<void> {
+  return fetchApi<void>(
+    `/api/v1/books/${bookId}/notes/${noteId}/attachments/${attachmentId}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export function getAttachmentUrl(
+  bookId: string,
+  noteId: string,
+  attachmentId: string
+): string {
+  return `/api/v1/books/${bookId}/notes/${noteId}/attachments/${attachmentId}`;
 }

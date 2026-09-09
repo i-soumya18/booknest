@@ -212,3 +212,26 @@ export interface SearchResult {
   cfi?: string;
 }
 
+export interface NoteAttachment {
+  id: string;
+  note_id: string;
+  attachment_type: "image" | "audio";
+  original_name: string;
+  file_size_bytes: number;
+  mime_type: string;
+  duration_seconds?: number | null;
+  created_at: string;
+}
+
+export interface ReaderNote {
+  id: string;
+  book_id: string;
+  user_id: string;
+  page_number?: number | null;
+  highlight_id?: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  attachments: NoteAttachment[];
+}
+
