@@ -1,0 +1,123 @@
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4, 12px) var(--space-5, 16px);
+  background: var(--color-surface-raised, #111d33);
+  border: 1px solid var(--color-border-default, rgba(148, 163, 184, 0.12));
+  border-radius: var(--radius-md, 10px);
+  gap: var(--space-4, 12px);
+  transition: border-color var(--motion-fast, 180ms) ease;
+}
+
+.card:hover {
+  border-color: var(--color-border-hover, rgba(56, 189, 248, 0.35));
+}
+
+.infoGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 8px);
+  min-width: 0;
+  flex: 1;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  font-size: var(--font-size-xs, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-xs, 4px);
+  flex-shrink: 0;
+}
+
+.badgePdf {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.badgeEpub {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fileName {
+  font-size: var(--font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--color-text-primary, #e2e8f0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: var(--font-size-xs, 11px);
+  color: var(--color-text-secondary, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2, 6px);
+  flex-shrink: 0;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: var(--font-size-xs, 12px);
+  font-weight: 500;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  transition: all var(--motion-fast, 180ms) ease;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.actionButton:hover:not(:disabled) {
+  background: var(--color-surface-hover, #1e3256);
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+.actionButton:focus-visible {
+  outline: 2px solid var(--color-accent-primary, #38bdf8);
+  outline-offset: 2px;
+}
+
+.readButton {
+  background: var(--color-accent-bg, rgba(56, 189, 248, 0.1));
+  color: var(--color-accent-primary, #38bdf8);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.readButton:hover:not(:disabled) {
+  background: var(--color-accent-primary, #38bdf8);
+  color: #080d16;
+}
+
+.deleteButton {
+  color: #fb7185;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--color-error-bg, rgba(244, 63, 94, 0.12));
+  color: #f43f5e;
+}

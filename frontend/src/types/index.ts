@@ -4,6 +4,28 @@ export type BookStatus = "WANT_TO_READ" | "READING" | "FINISHED";
 export type BookSortBy = "created_at" | "title" | "rating";
 export type SortOrder = "asc" | "desc";
 
+export interface BookFile {
+  id: string;
+  bookId?: string;
+  book_id?: string;
+  originalName?: string;
+  original_name?: string;
+  storedPath?: string;
+  stored_path?: string;
+  mimeType?: string;
+  mime_type?: string;
+  fileSizeBytes?: number;
+  file_size_bytes?: number;
+  pageCount?: number | null;
+  page_count?: number | null;
+  coverThumbnail?: string | null;
+  cover_thumbnail?: string | null;
+  checksumSha256?: string | null;
+  checksum_sha256?: string | null;
+  createdAt?: string;
+  created_at?: string;
+}
+
 export interface Book {
   id: string;
   ownerId?: string;
@@ -23,6 +45,7 @@ export interface Book {
   updated_at?: string;
   finishedAt?: string | null;
   finished_at?: string | null;
+  file?: BookFile | null;
 }
 
 export interface PaginatedResponse<T> {

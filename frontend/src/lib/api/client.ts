@@ -49,7 +49,7 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
   const url = `${baseUrl}${endpoint}`;
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(fetchOptions.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(fetchOptions.headers as Record<string, string> || {}),
   };
 
@@ -62,6 +62,7 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
     headers,
     credentials: "include", // Send HttpOnly refresh_token cookie
   });
+
 
   // Transparent refresh and retry on 401 Unauthorized
   if (response.status === 401 && !skipAuthRefresh && endpoint !== "/api/v1/auth/refresh") {
@@ -116,3 +117,57 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
 
   return (parsedData ?? ({} as any)) as T;
 }
+
+export async function uploadWithProgress<T>(
+  endpoint: string,
+  formData: FormData,
+  onProgress?: (percentage: number) => void
+): Promise<T> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}${endpoint}`;
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.withCredentials = true;
+
+    if (accessToken) {
+      xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
+    }
+
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      let data: any = null;
+      try {
+        data = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+      } catch {
+        data = null;
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data as T);
+      } else {
+        const errorMsg =
+          data?.detail?.error?.message ||
+          (typeof data?.detail === "string" ? data.detail : null) ||
+          `Upload failed with status ${xhr.status}`;
+        reject(new Error(errorMsg));
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Network error occurred during upload"));
+    };
+
+    xhr.send(formData);
+  });
+}
+

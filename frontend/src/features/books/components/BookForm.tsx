@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { Book, BookStatus } from "@/types";
+import { Book, BookFile, BookStatus } from "@/types";
 import { FormField, Input, SelectField, TextareaField, Spinner, ErrorBanner } from "@/components/ui";
+import { FileDropzone } from "./FileDropzone";
+import { FileCard } from "./FileCard";
+import { fetchApi, uploadWithProgress } from "@/lib/api/client";
 
 export interface BookFormData {
   title: string;
@@ -18,7 +21,7 @@ export interface BookFormData {
 
 interface BookFormProps {
   initialData?: Book | null;
-  onSubmit: (data: BookFormData) => Promise<void>;
+  onSubmit: (data: BookFormData, file?: File | null) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -37,9 +40,16 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
   );
   const [notes, setNotes] = useState(initialData?.notes || "");
   
+  const [currentFile, setCurrentFile] = useState<BookFile | null>(initialData?.file ?? null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+
 
   // Close modal on Escape
   useEffect(() => {
@@ -105,21 +115,70 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
 
     setLoading(true);
     try {
-      await onSubmit({
-        title: title.trim(),
-        author: author.trim(),
-        status,
-        total_pages: Number(totalPages),
-        totalPages: Number(totalPages),
-        current_page: Number(currentPage),
-        currentPage: Number(currentPage),
-        rating: rating ? Number(rating) : null,
-        notes: notes.trim() || null,
-      });
+      await onSubmit(
+        {
+          title: title.trim(),
+          author: author.trim(),
+          status,
+          total_pages: Number(totalPages),
+          totalPages: Number(totalPages),
+          current_page: Number(currentPage),
+          currentPage: Number(currentPage),
+          rating: rating ? Number(rating) : undefined,
+          notes: notes.trim() || undefined,
+        },
+        selectedFile
+      );
     } catch (err) {
       setErrors({ _form: err instanceof Error ? err.message : "Failed to save book." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    setUploadError(null);
+    if (initialData?.id) {
+      setIsUploading(true);
+      setUploadProgress(0);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadedFile = await uploadWithProgress<BookFile>(
+          `/api/v1/books/${initialData.id}/upload`,
+          formData,
+          (percent) => setUploadProgress(percent)
+        );
+        setCurrentFile(uploadedFile);
+        if (uploadedFile.page_count && uploadedFile.page_count > 0) {
+          setTotalPages(uploadedFile.page_count);
+        }
+      } catch (err: any) {
+        setUploadError(err.message || "Failed to upload file");
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      setSelectedFile(file);
+      if (!title.trim()) {
+        const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        setTitle(cleanName);
+      }
+    }
+  };
+
+  const handleRemoveFile = async () => {
+    if (!initialData?.id) {
+      setSelectedFile(null);
+      return;
+    }
+    try {
+      await fetchApi(`/api/v1/books/${initialData.id}/file`, {
+        method: "DELETE",
+      });
+      setCurrentFile(null);
+    } catch (err: any) {
+      setUploadError(err.message || "Failed to remove file");
     }
   };
 
@@ -255,6 +314,74 @@ export function BookForm({ initialData, onSubmit, onCancel }: BookFormProps) {
               placeholder="Optional personal notes, takeaways, or quotes..."
             />
           </FormField>
+
+          <div style={{ marginBottom: "var(--space-4)" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "var(--font-size-sm, 13px)",
+                fontWeight: 500,
+                color: "var(--color-text-secondary, #94a3b8)",
+                marginBottom: "var(--space-2, 6px)",
+              }}
+            >
+              Book Document (PDF or EPUB)
+            </label>
+            {currentFile && initialData?.id ? (
+              <FileCard
+                file={currentFile}
+                bookId={initialData.id}
+                canDelete={true}
+                onDelete={handleRemoveFile}
+              />
+            ) : selectedFile ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "12px 16px",
+                  background: "var(--color-surface-raised, #111d33)",
+                  border: "1px solid var(--color-border-default, rgba(148, 163, 184, 0.12))",
+                  borderRadius: "var(--radius-md, 10px)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{ fontSize: "20px" }}>📄</span>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "var(--color-text-primary, #e2e8f0)",
+                      }}
+                    >
+                      {selectedFile.name}
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--color-text-secondary, #94a3b8)" }}>
+                      {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB • Ready to upload with book
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFile(null)}
+                  className="btn btn-ghost btn-xs"
+                  style={{ color: "#fb7185" }}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <FileDropzone
+                onFileSelect={handleFileSelect}
+                isUploading={isUploading}
+                uploadProgress={uploadProgress}
+                error={uploadError}
+              />
+            )}
+          </div>
+
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", marginTop: "var(--space-4)" }}>
             <button

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Book, BookSortBy, BookStatus, PaginatedResponse, SortOrder } from "@/types";
-import { fetchApi } from "@/lib/api/client";
+import { fetchApi, uploadWithProgress } from "@/lib/api/client";
 import { BookCard } from "./BookCard";
 import { BookForm, BookFormData } from "./BookForm";
+import { FileDropzone } from "./FileDropzone";
 import { LendBookModal } from "@/features/lending";
 import { Skeleton, SkeletonCard, ErrorBanner, useToast } from "@/components/ui";
 
@@ -32,6 +33,13 @@ export function BookList() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [lendingBook, setLendingBook] = useState<Book | null>(null);
   const [isLendModalOpen, setIsLendModalOpen] = useState(false);
+
+  // Upload modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadModalProgress, setUploadModalProgress] = useState(0);
+  const [isModalUploading, setIsModalUploading] = useState(false);
+  const [uploadModalError, setUploadModalError] = useState<string | null>(null);
+
 
 
   const loadBooks = useCallback(async () => {
@@ -61,6 +69,7 @@ export function BookList() {
         updated_at: b.updated_at ?? b.updatedAt,
         finishedAt: b.finished_at ?? b.finishedAt,
         finished_at: b.finished_at ?? b.finishedAt,
+        file: b.file ?? null,
       }));
       const total = data.total ?? 0;
       const totalPages = data.total_pages ?? data.totalPages ?? (Math.ceil(total / (data.page_size || pageSize)) || 0);
@@ -83,7 +92,7 @@ export function BookList() {
     loadBooks();
   }, [loadBooks]);
 
-  const handleCreateOrUpdate = async (formData: BookFormData) => {
+  const handleCreateOrUpdate = async (formData: BookFormData, file?: File | null) => {
     const payload = {
       title: formData.title,
       author: formData.author,
@@ -99,12 +108,25 @@ export function BookList() {
           method: "PUT",
           body: JSON.stringify(payload),
         });
+        if (file) {
+          const form = new FormData();
+          form.append("file", file);
+          await uploadWithProgress(`/api/v1/books/${editingBook.id}/upload`, form);
+        }
         success(`Updated "${formData.title}"`);
       } else {
-        await fetchApi<Book>("/api/v1/books", {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
+        if (file) {
+          const form = new FormData();
+          form.append("file", file);
+          form.append("title", formData.title);
+          form.append("author", formData.author);
+          await uploadWithProgress<Book>("/api/v1/books/upload", form);
+        } else {
+          await fetchApi<Book>("/api/v1/books", {
+            method: "POST",
+            body: JSON.stringify(payload),
+          });
+        }
         success(`Added "${formData.title}" to library`);
       }
       setIsFormOpen(false);
@@ -115,6 +137,29 @@ export function BookList() {
       throw err;
     }
   };
+
+  const handleQuickUpload = async (file: File) => {
+    setIsModalUploading(true);
+    setUploadModalProgress(0);
+    setUploadModalError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const newBook = await uploadWithProgress<Book>(
+        "/api/v1/books/upload",
+        form,
+        (pct) => setUploadModalProgress(pct)
+      );
+      success(`🎉 Added "${newBook.title}" by ${newBook.author} from file!`);
+      setIsUploadModalOpen(false);
+      loadBooks();
+    } catch (err: any) {
+      setUploadModalError(err.message || "Failed to upload book file");
+    } finally {
+      setIsModalUploading(false);
+    }
+  };
+
 
   const handleDelete = async (bookId: string) => {
     setError(null);
@@ -163,6 +208,22 @@ export function BookList() {
             style={{ border: "1px solid rgba(56, 189, 248, 0.4)", color: "var(--color-accent-primary)" }}
           >
             <span>🤝</span> Lend a Book
+          </button>
+          <button
+            onClick={() => {
+              setUploadModalError(null);
+              setIsUploadModalOpen(true);
+            }}
+            className="btn btn-secondary"
+            style={{
+              border: "1px solid rgba(56, 189, 248, 0.4)",
+              color: "var(--color-accent-primary)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <span>⬆️</span> Upload Book
           </button>
           <button
             onClick={() => {
@@ -545,6 +606,100 @@ export function BookList() {
           }}
           onSuccess={loadBooks}
         />
+      )}
+
+      {/* Quick Upload Modal */}
+      {isUploadModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: "var(--space-4)",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isModalUploading) {
+              setIsUploadModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="design-card"
+            style={{
+              width: "100%",
+              maxWidth: "540px",
+              padding: "var(--space-6)",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "var(--space-4)",
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    fontSize: "var(--font-size-h3)",
+                    fontWeight: 700,
+                    margin: 0,
+                    color: "var(--color-text-primary)",
+                  }}
+                >
+                  Upload Book Document
+                </h3>
+                <p
+                  style={{
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--color-text-secondary)",
+                    margin: "4px 0 0",
+                  }}
+                >
+                  Upload a PDF or EPUB to automatically create the book in your library and read online.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => !isModalUploading && setIsUploadModalOpen(false)}
+                disabled={isModalUploading}
+                className="btn btn-ghost btn-xs"
+                style={{ fontSize: "16px" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <FileDropzone
+              onFileSelect={handleQuickUpload}
+              isUploading={isModalUploading}
+              uploadProgress={uploadModalProgress}
+              error={uploadModalError}
+            />
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--space-4)" }}>
+              <button
+                type="button"
+                onClick={() => setIsUploadModalOpen(false)}
+                disabled={isModalUploading}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

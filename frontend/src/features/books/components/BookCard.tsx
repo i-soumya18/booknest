@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Book } from "@/types";
 import { fetchApi } from "@/lib/api/client";
 import { LendBookModal, returnBook } from "@/features/lending";
@@ -166,8 +167,22 @@ export function BookCard({ book, onEdit, onDelete, onLend, onProgressUpdated }: 
           </p>
         </div>
 
-        <div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", alignItems: "flex-end" }}>
           {getStatusBadge(book.status)}
+          {book.file && (
+            <span
+              className="badge"
+              style={{
+                fontSize: "10px",
+                fontWeight: 700,
+                background: "rgba(56, 189, 248, 0.15)",
+                color: "#38bdf8",
+                border: "1px solid rgba(56, 189, 248, 0.3)",
+              }}
+            >
+              {(book.file.mime_type || book.file.mimeType) === "application/pdf" ? "PDF" : "EPUB"}
+            </span>
+          )}
         </div>
       </div>
 
@@ -360,8 +375,24 @@ export function BookCard({ book, onEdit, onDelete, onLend, onProgressUpdated }: 
             paddingTop: "10px",
             borderTop: "1px solid var(--color-border-subtle)",
             flexWrap: "wrap",
+            alignItems: "center",
           }}
         >
+          {book.file && (
+            <Link
+              href={`/read/${book.id}`}
+              className="btn btn-primary btn-xs"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "4px",
+                fontWeight: 600,
+                padding: "4px 10px",
+              }}
+            >
+              📖 Read
+            </Link>
+          )}
           <button
             onClick={() => {
               if (onLend) {
