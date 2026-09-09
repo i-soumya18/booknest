@@ -3,9 +3,9 @@ import * as pdfjsLib from "pdfjs-dist";
 import { TocItem } from "@/types";
 import styles from "./PdfReader.module.css";
 
-// Configure pdf.js worker
-if (typeof window !== "undefined" && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure pdf.js worker using same-origin local asset to prevent cross-origin worker security errors
+if (typeof window !== "undefined") {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 }
 
 interface PdfReaderProps {
@@ -46,8 +46,9 @@ export const PdfReader: React.FC<PdfReaderProps> = ({
         const arrayBuffer = await fileBlob.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({
           data: new Uint8Array(arrayBuffer),
-          cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+          cMapUrl: "/cmaps/",
           cMapPacked: true,
+          standardFontDataUrl: "/standard_fonts/",
         });
 
         const doc = await loadingTask.promise;
